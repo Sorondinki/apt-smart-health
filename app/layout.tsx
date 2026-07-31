@@ -12,7 +12,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ha">
-      <body style={{ margin: 0, padding: 0, fontFamily: 'sans-serif', backgroundColor: '#f8fafc' }}>
+      <head>
+        <script src="https://cdn.tailwindcss.com"></script>
+      </head>
+      <body className="bg-slate-50 text-slate-900 antialiased">
         {children}
       </body>
     </html>
