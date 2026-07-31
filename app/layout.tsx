@@ -1,17 +1,8 @@
-import type { Metadata } from 'next';
-import '@/styles/globals.css';
-import PWAInstallerAlert from '@/components/pwa/PWAInstallerAlert';
+import React from 'react';
 
-export const metadata: Metadata = {
-  title: 'APT Smart-Health | Hospital Management & Telemedicine System',
-  description: 'Gintaccen tsari mai amfani da fasahar PWA domin sauƙaƙe gudanar da asibitoci, alaƙar likitoci da marasa lafiya a sauƙaƙe da cikin tsaro.',
-  manifest: '/manifest.json',
-  themeColor: '#0284c7',
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: 'default',
-    title: 'APT Smart-Health',
-  },
+export const metadata = {
+  title: 'APT Smart-Health',
+  description: 'Healthcare & Telemedicine Platform',
 };
 
 export default function RootLayout({
@@ -21,12 +12,8 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ha">
-      <body className="bg-slate-50 text-slate-900 antialiased min-h-screen">
-        {/* PWA Prompt / Notification Alert */}
-        <PWAInstallerAlert />
-        
-        {/* Main Content Area */}
-        <main>{children}</main>
+      <body style={{ margin: 0, padding: 0, fontFamily: 'sans-serif', backgroundColor: '#f8fafc' }}>
+        {children}
       </body>
     </html>
   );
