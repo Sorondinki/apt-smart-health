@@ -21,27 +21,41 @@ export default function SubscriptionPage() {
       price: 45000,
       period: '/month',
       desc: 'Complete HMS for growing hospitals and specialist centers.',
-      features: ['Unlimited Staff Accounts', 'HD Telemedicine Video Consults', 'Full EHR & Inpatient Beds', 'E-Prescription & Pharmacy Link', '24/7 Priority Support'],
+      features: [
+        'Unlimited Staff Accounts',
+        'HD Telemedicine Video Consults',
+        'Full EHR & Inpatient Beds',
+        'E-Prescription & Pharmacy Link',
+        '24/7 Priority Support',
+      ],
     },
     enterprise: {
       name: 'Enterprise Network',
       price: 120000,
       period: '/month',
       desc: 'For multi-branch hospital chains & regional networks.',
-      features: ['Multi-Facility Operations', 'Custom API Integrations', 'Dedicated Account Manager', 'Custom Telemetry Analytics', '99.9% Uptime SLA Guarantee'],
+      features: [
+        'Multi-Facility Operations',
+        'Custom API Integrations',
+        'Dedicated Account Manager',
+        'Custom Telemetry Analytics',
+        '99.9% Uptime SLA Guarantee',
+      ],
     },
   };
 
   const handlePaystackPayment = (planKey: 'basic' | 'pro' | 'enterprise') => {
     if (!email) {
-      alert('Tabbatar ka shigar da adireshin Email dinka!');
+      alert('Kada ka manta! Shigar da adireshin Email dinka na Biyan Kudi.');
       return;
     }
 
     setLoading(true);
 
     const plan = plans[planKey];
-    const publicKey = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || 'pk_live_35d71341910d7e398c83ab6bac0665c790b216a9';
+    const publicKey =
+      process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY ||
+      'pk_live_35d71341910d7e398c83ab6bac0665c790b216a9';
 
     // Loading Paystack Inline SDK Dynamically
     const script = document.createElement('script');
@@ -51,7 +65,7 @@ export default function SubscriptionPage() {
       const handler = PaystackPop.setup({
         key: publicKey,
         email: email,
-        amount: plan.price * 100, // Paystack operates in kobo (Multiply NGN by 100)
+        amount: plan.price * 100, // Paystack is calculated in Kobo (NGN * 100)
         currency: 'NGN',
         ref: 'APT_HEALTH_' + Math.floor(Math.random() * 1000000000 + 1),
         metadata: {
@@ -63,11 +77,27 @@ export default function SubscriptionPage() {
             },
           ],
         },
-        callback: function (response: any) {
-          setLoading(false);
-          alert('Biyan kudi ya kammala lami lafiya! Reference ID: ' + response.reference);
-          // Nan za ka iya tura mutum zuwa dashboard ɗinsa
-          window.location.href = '/dashboard/';
+        callback: async function (response: any) {
+          // Verify transaction via backend API
+          try {
+            const res = await fetch('/api/paystack/verify/', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ reference: response.reference }),
+            });
+            const result = await res.json();
+
+            setLoading(false);
+            if (result.success) {
+              alert('Biyan kudi ya kammala tsaf! Ref: ' + response.reference);
+              window.location.href = '/dashboard/';
+            } else {
+              alert('An samu matsala wajen tabbatar da biyan kudin.');
+            }
+          } catch (e) {
+            setLoading(false);
+            alert('Biyan kudi ya wuce amman ana bukatar Tabbatarwa.');
+          }
         },
         onClose: function () {
           setLoading(false);
@@ -81,7 +111,7 @@ export default function SubscriptionPage() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans">
-      {/* Header */}
+      {/* Header Bar */}
       <header className="border-b border-slate-800 bg-slate-900/80 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3">
@@ -106,32 +136,32 @@ export default function SubscriptionPage() {
       <div className="max-w-7xl mx-auto px-4 py-16 space-y-12">
         <div className="text-center space-y-4 max-w-3xl mx-auto">
           <span className="px-3 py-1 bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-xs font-bold rounded-full uppercase">
-            Flexible Health Facility Pricing
+            Facility Subscription & Pricing
           </span>
           <h1 className="text-4xl sm:text-5xl font-black text-white tracking-tight">
-            Choose the Right Plan for Your Healthcare Facility
+            Choose Your Healthcare Plan
           </h1>
           <p className="text-slate-400 text-sm">
-            Unlock seamless hospital management, telemedicine, and outpatient services with instant Paystack activation.
+            Activate HMS, Outpatient Triage, Telemedicine Video Consults, and EHR with Paystack instant settlement.
           </p>
         </div>
 
-        {/* Email Form for Billing */}
-        <div className="max-w-md mx-auto bg-slate-900 border border-slate-800 p-6 rounded-3xl space-y-3">
+        {/* Email Input */}
+        <div className="max-w-md mx-auto bg-slate-900 border border-slate-800 p-6 rounded-3xl space-y-3 shadow-xl">
           <label className="block text-xs font-bold uppercase tracking-wider text-slate-400">
-            Billing Email Address
+            Facility Billing Email
           </label>
           <input
             type="email"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="e.g. admin@yourhospital.com"
+            placeholder="e.g. billing@yourhospital.com"
             className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-700 text-sm text-white focus:ring-2 focus:ring-cyan-500 outline-none"
           />
         </div>
 
-        {/* Pricing Cards */}
+        {/* Plan Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {(Object.keys(plans) as Array<keyof typeof plans>).map((key) => {
             const plan = plans[key];
@@ -155,9 +185,11 @@ export default function SubscriptionPage() {
                 <div className="space-y-4">
                   <h3 className="text-xl font-black text-white">{plan.name}</h3>
                   <p className="text-xs text-slate-400 leading-relaxed">{plan.desc}</p>
-                  
+
                   <div className="flex items-baseline gap-1">
-                    <span className="text-3xl font-black text-white">₦{plan.price.toLocaleString()}</span>
+                    <span className="text-3xl font-black text-white">
+                      ₦{plan.price.toLocaleString()}
+                    </span>
                     <span className="text-xs text-slate-500">{plan.period}</span>
                   </div>
 
@@ -172,7 +204,8 @@ export default function SubscriptionPage() {
 
                 <button
                   onClick={() => {
-                    setSelectedRoleAndPay(key);
+                    setSelectedPlan(key);
+                    handlePaystackPayment(key);
                   }}
                   disabled={loading}
                   className={`w-full py-4 rounded-2xl font-bold text-xs transition shadow-lg ${
@@ -181,24 +214,19 @@ export default function SubscriptionPage() {
                       : 'bg-slate-800 hover:bg-slate-700 text-slate-200'
                   }`}
                 >
-                  {loading ? 'Processing Paystack...' : `Subscribe with Paystack (₦${plan.price.toLocaleString()})`}
+                  {loading ? 'Processing Paystack...' : `Pay Now (₦${plan.price.toLocaleString()})`}
                 </button>
               </div>
             );
-
-            function setSelectedRoleAndPay(k: 'basic' | 'pro' | 'enterprise') {
-              setSelectedPlan(k);
-              handlePaystackPayment(k);
-            }
           })}
         </div>
 
-        {/* Security Footer Note */}
+        {/* Payment Footer Note */}
         <div className="text-center text-xs text-slate-500 flex items-center justify-center gap-2">
-          <span>🔒 Secured by Paystack 256-Bit SSL Encryption</span>
+          <span>🔒 Secured 256-Bit SSL Paystack Payment Gateway</span>
         </div>
       </div>
     </div>
   );
-        }
-        
+                                  }
+          
