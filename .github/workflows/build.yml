@@ -13,11 +13,10 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: Setup Node.js
+      - name: Setup Node.js Environment
         uses: actions/setup-node@v3
         with:
           node-version: '18'
-          cache: 'npm'
 
       - name: Install Dependencies
         run: npm install
@@ -25,12 +24,12 @@ jobs:
       - name: Static Export Build
         run: npm run build
 
-      - name: Zip the Output
+      - name: Zip the Output Directory
         run: |
           cd out
           zip -r ../build-out.zip .
 
-      - name: Upload Build Artifact
+      - name: Upload Build Artifact for Download
         uses: actions/upload-artifact@v4
         with:
           name: cpanel-deploy-ready
