@@ -1,0 +1,38 @@
+name: Build and Export APT Smart-Health
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Static Export Build
+        run: npm run build
+
+      - name: Zip the Output
+        run: |
+          cd out
+          zip -r ../build-out.zip .
+
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cpanel-deploy-ready
+          path: build-out.zip
+          
