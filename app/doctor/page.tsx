@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 
 export default function DoctorConsolePage() {
+  const [orderType, setOrderType] = useState<'pharmacy' | 'lab'>('pharmacy');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isVideoActive, setIsVideoActive] = useState(false);
   const [micMuted, setMicMuted] = useState(false);
