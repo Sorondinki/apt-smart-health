@@ -277,7 +277,6 @@ export default function LandingPage() {
             ))}
           </div>
         </div>
-      </div>
       </section>
 
       {/* Footer */}
@@ -286,5 +285,5 @@ export default function LandingPage() {
       </footer>
     </main>
   );
-              }
-                
+      }
+        
