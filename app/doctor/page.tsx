@@ -10,6 +10,12 @@ export default function DoctorConsolePage() {
   const [micMuted, setMicMuted] = useState(false);
   const [camOff, setCamOff] = useState(false);
 
+  // E-Prescription Form States
+  const [medicationName, setMedicationName] = useState('');
+  const [dosage, setDosage] = useState('');
+  const [duration, setDuration] = useState('');
+  const [clinicalNote, setClinicalNote] = useState('');
+
   // 🔐 AUTHENTICATION & SESSION CHECK GUARD
   useEffect(() => {
     const isLoggedIn = localStorage.getItem('isLoggedIn');
@@ -34,6 +40,7 @@ export default function DoctorConsolePage() {
       name: 'Amina Ibrahim',
       reason: 'Routine Follow-up',
       status: 'Ready Now',
+      labResult: 'Pending Lab Request',
       avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=250',
     },
     {
@@ -41,6 +48,7 @@ export default function DoctorConsolePage() {
       name: 'Usman Bello',
       reason: 'Lab Result Review',
       time: '10:45 AM',
+      labResult: 'MP: Positive (++), Widal: 1:80',
       avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=250',
     },
     {
@@ -48,11 +56,40 @@ export default function DoctorConsolePage() {
       name: 'Fatima Abubakar',
       reason: 'General Checkup',
       time: '11:30 AM',
+      labResult: 'Fasting Blood Sugar: 95 mg/dL',
       avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=250',
     },
   ]);
 
   const [activePatient, setActivePatient] = useState(patientsQueue[0]);
+
+  const handleSaveNote = () => {
+    if (!clinicalNote) {
+      alert('Please enter clinical findings before saving.');
+      return;
+    }
+    alert(`Clinical consultation note successfully saved to ${activePatient.name}'s EHR.`);
+    setClinicalNote('');
+  };
+
+  const handleSendOrder = () => {
+    if (orderType === 'pharmacy' && (!medicationName || !dosage)) {
+      alert('Please fill in the medication name and dosage.');
+      return;
+    }
+
+    if (orderType === 'lab' && !medicationName) {
+      alert('Please enter the required laboratory test name.');
+      return;
+    }
+
+    const destination = orderType === 'pharmacy' ? 'Pharmacy Desk' : 'Laboratory Department';
+    alert(`Order for ${activePatient.name} successfully dispatched to ${destination} & Patient EHR!`);
+
+    setMedicationName('');
+    setDosage('');
+    setDuration('');
+  };
 
   // Prevent UI flickers before session check completes
   if (!isAuthenticated) {
@@ -194,6 +231,19 @@ export default function DoctorConsolePage() {
             )}
           </div>
 
+          {/* Laboratory Results Display Box (Received from Lab) */}
+          <div className="bg-slate-800/60 border border-purple-500/30 rounded-3xl p-5 space-y-2">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-purple-400 flex items-center gap-2">
+                <span>🔬 Laboratory Result Findings</span>
+              </h3>
+              <span className="text-[10px] font-bold text-slate-400">Patient File: {activePatient.id}</span>
+            </div>
+            <div className="p-3 bg-slate-900/80 border border-slate-700/60 rounded-xl text-xs text-slate-200">
+              <p className="font-semibold">{activePatient.labResult}</p>
+            </div>
+          </div>
+
           {/* Consultation Notes Section */}
           <div className="bg-slate-800/60 border border-slate-700/60 rounded-3xl p-5 space-y-3">
             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
@@ -201,11 +251,16 @@ export default function DoctorConsolePage() {
             </h3>
             <textarea
               rows={3}
-              placeholder="Type patient symptoms, clinical observations, or vitals observed during the video call..."
+              value={clinicalNote}
+              onChange={(e) => setClinicalNote(e.target.value)}
+              placeholder="Type patient symptoms, clinical observations, or vitals observed during the consultation..."
               className="w-full bg-slate-900 border border-slate-700/80 rounded-2xl p-4 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-sky-500 transition"
             />
             <div className="flex justify-end">
-              <button className="px-5 py-2.5 bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs rounded-xl shadow-md transition">
+              <button
+                onClick={handleSaveNote}
+                className="px-5 py-2.5 bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs rounded-xl shadow-md transition"
+              >
                 Save Note to Patient EHR
               </button>
             </div>
@@ -272,68 +327,76 @@ export default function DoctorConsolePage() {
           {/* E-Prescription Form Card */}
           <div className="bg-slate-800/60 border border-slate-700/60 rounded-3xl p-5 space-y-4">
             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
-              Generate Digital E-Prescription
+              Generate Digital Order / E-Prescription
             </h3>
 
             <div className="space-y-3">
               <div>
                 <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
-                  Medication Name
+                  {orderType === 'pharmacy' ? 'Medication Name' : 'Laboratory Test Required'}
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. Paracetamol 500mg"
+                  value={medicationName}
+                  onChange={(e) => setMedicationName(e.target.value)}
+                  placeholder={orderType === 'pharmacy' ? 'e.g. Paracetamol 500mg' : 'e.g. Full Blood Count / Malaria Test'}
                   className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none focus:border-sky-500 transition"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
-                    Dosage
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="2 tablets x 3 daily"
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none focus:border-sky-500 transition"
-                  />
+              {orderType === 'pharmacy' && (
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
+                      Dosage
+                    </label>
+                    <input
+                      type="text"
+                      value={dosage}
+                      onChange={(e) => setDosage(e.target.value)}
+                      placeholder="2 tablets x 3 daily"
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none focus:border-sky-500 transition"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
+                      Duration
+                    </label>
+                    <input
+                      type="text"
+                      value={duration}
+                      onChange={(e) => setDuration(e.target.value)}
+                      placeholder="5 Days"
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none focus:border-sky-500 transition"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
-                    Duration
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="5 Days"
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none focus:border-sky-500 transition"
-                  />
-                </div>
-              </div>
+              )}
 
               {/* Selection Mode for Destination */}
-<div className="grid grid-cols-2 gap-2 mb-3">
-  <button 
-    type="button"
-    onClick={() => setOrderType('pharmacy')}
-    className={`py-2 text-xs font-bold rounded-xl border ${orderType === 'pharmacy' ? 'bg-sky-600 border-sky-500 text-white' : 'bg-slate-900 border-slate-700 text-slate-400'}`}
-  >
-    💊 Pharmacy Order
-  </button>
-  <button 
-    type="button"
-    onClick={() => setOrderType('lab')}
-    className={`py-2 text-xs font-bold rounded-xl border ${orderType === 'lab' ? 'bg-purple-600 border-purple-500 text-white' : 'bg-slate-900 border-slate-700 text-slate-400'}`}
-  >
-    🔬 Laboratory Order
-  </button>
-</div>
+              <div className="grid grid-cols-2 gap-2 mb-3">
+                <button 
+                  type="button"
+                  onClick={() => setOrderType('pharmacy')}
+                  className={`py-2 text-xs font-bold rounded-xl border transition ${orderType === 'pharmacy' ? 'bg-sky-600 border-sky-500 text-white' : 'bg-slate-900 border-slate-700 text-slate-400'}`}
+                >
+                  💊 Pharmacy Order
+                </button>
+                <button 
+                  type="button"
+                  onClick={() => setOrderType('lab')}
+                  className={`py-2 text-xs font-bold rounded-xl border transition ${orderType === 'lab' ? 'bg-purple-600 border-purple-500 text-white' : 'bg-slate-900 border-slate-700 text-slate-400'}`}
+                >
+                  🔬 Laboratory Order
+                </button>
+              </div>
 
-<button
-  onClick={() => alert(`Order for ${activePatient.name} successfully routed to ${orderType.toUpperCase()} & Patient EHR!`)}
-  className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-emerald-600/20 transition"
->
-  Send Request to {orderType === 'pharmacy' ? 'Pharmacy' : 'Laboratory'}
-</button>
+              <button
+                onClick={handleSendOrder}
+                className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-emerald-600/20 transition"
+              >
+                Send Request to {orderType === 'pharmacy' ? 'Pharmacy' : 'Laboratory'}
+              </button>
 
             </div>
           </div>
@@ -342,5 +405,5 @@ export default function DoctorConsolePage() {
       </div>
     </div>
   );
-            }
-            
+          }
+              
