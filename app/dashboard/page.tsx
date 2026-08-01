@@ -6,7 +6,6 @@ import Link from 'next/link';
 export default function HospitalDashboardPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // Authentication Session Check
   useEffect(() => {
     const isLoggedIn = localStorage.getItem('isLoggedIn');
     if (!isLoggedIn) {
@@ -26,7 +25,6 @@ export default function HospitalDashboardPage() {
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 font-sans flex flex-col">
-      {/* Header Bar */}
       <header className="border-b border-slate-800 bg-slate-950/80 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -52,7 +50,6 @@ export default function HospitalDashboardPage() {
         </div>
       </header>
 
-      {/* Dashboard Main Content */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-6 space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-5">
@@ -71,7 +68,6 @@ export default function HospitalDashboardPage() {
           </div>
         </div>
 
-        {/* Quick Actions Navigation */}
         <div className="bg-slate-800/40 border border-slate-700/50 rounded-3xl p-6">
           <h3 className="text-xs font-bold text-slate-400 uppercase mb-4 tracking-wider">
             Quick Navigation Modules
@@ -98,4 +94,4 @@ export default function HospitalDashboardPage() {
       </main>
     </div>
   );
-            }
+}
