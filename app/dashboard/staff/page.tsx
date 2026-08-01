@@ -25,7 +25,7 @@ export default function StaffManagementPage() {
 
     setStaffList([...staffList, newStaff]);
     setFormData({ name: '', role: 'Doctor', dept: '', email: '', password: '' });
-    alert('Sabuwar ma'aikaci an yi masa rijista lami lafiya!');
+    alert("Sabuwar ma'aikaci an yi masa rijista lami lafiya!");
   };
 
   return (
@@ -138,4 +138,5 @@ export default function StaffManagementPage() {
       </div>
     </div>
   );
-}
+                }
+                
