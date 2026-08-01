@@ -23,8 +23,31 @@ export default function SuperAdminConsolePage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentAdminEmail, setCurrentAdminEmail] = useState('');
 
-  // Strict Super Admin Verification Email
-  const SUPER_ADMIN_EMAIL = 'sorondinkiseeme@gmail.com';
+  // -------------------------------------------------------------
+  // AUTH GUARD & LOGOUT FUNCTION (NAN ZAKA SAKA SU)
+  // -------------------------------------------------------------
+  useEffect(() => {
+    const isMasterAuth = localStorage.getItem('isMasterAuthenticated');
+    const email = localStorage.getItem('userEmail') || 'sorondinkiseeme@gmail.com';
+
+    setCurrentAdminEmail(email);
+
+    // Duba ko an shiga ta Master Access Passcode
+    if (isMasterAuth !== 'true') {
+      router.push('/login');
+      return;
+    }
+
+    setIsAuthenticated(true);
+  }, [router]);
+
+  const handleLogout = () => {
+    localStorage.removeItem('isMasterAuthenticated');
+    localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('userEmail');
+    router.push('/login');
+  };
+  // -------------------------------------------------------------
 
   // State for all registered entities (Hospitals, Clinics, Consultants, Staff & Agents)
   const [accounts, setAccounts] = useState<RegisteredAccount[]>([
