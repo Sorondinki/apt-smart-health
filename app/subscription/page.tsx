@@ -5,19 +5,36 @@ import Link from 'next/link';
 
 export default function SubscriptionPage() {
   const [loading, setLoading] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<'basic' | 'pro' | 'enterprise'>('pro');
+  const [selectedPlan, setSelectedPlan] = useState<'consultant' | 'basic' | 'pro' | 'enterprise'>('pro');
   const [email, setEmail] = useState('');
 
   const plans = {
-    basic: {
-      name: 'Clinic Basic',
+    consultant: {
+      name: 'Tier 1: Private Consultant',
       price: 15000,
       period: '/month',
+      desc: 'Designed for independent doctors offering direct online consultations.',
+      features: [
+        'Single Doctor Login',
+        'Direct Telemedicine Video Calls',
+        'E-Prescriptions Generation',
+        'Digital Patient Notes & File Access',
+      ],
+    },
+    basic: {
+      name: 'Tier 2: Clinic Basic',
+      price: 25000,
+      period: '/month',
       desc: 'Ideal for small outpatient clinics & individual practices.',
-      features: ['Up to 5 Staff Accounts', 'Outpatient Triage Desk', 'Basic EHR Records', 'Standard Email Support'],
+      features: [
+        'Up to 5 Staff Accounts',
+        'Standalone Reception Desk',
+        'Basic EHR Patient Records',
+        'Standard Email Support',
+      ],
     },
     pro: {
-      name: 'Hospital Pro',
+      name: 'Tier 3: Hospital Pro',
       price: 45000,
       period: '/month',
       desc: 'Complete HMS for growing hospitals and specialist centers.',
@@ -44,7 +61,7 @@ export default function SubscriptionPage() {
     },
   };
 
-  const handlePaystackPayment = (planKey: 'basic' | 'pro' | 'enterprise') => {
+  const handlePaystackPayment = (planKey: 'consultant' | 'basic' | 'pro' | 'enterprise') => {
     if (!email) {
       alert('Kada ka manta! Shigar da adireshin Email dinka na Biyan Kudi.');
       return;
@@ -57,7 +74,6 @@ export default function SubscriptionPage() {
       process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY ||
       'pk_live_35d71341910d7e398c83ab6bac0665c790b216a9';
 
-    // Loading Paystack Inline SDK Dynamically
     const script = document.createElement('script');
     script.src = 'https://js.paystack.co/v1/inline.js';
     script.onload = () => {
@@ -65,7 +81,7 @@ export default function SubscriptionPage() {
       const handler = PaystackPop.setup({
         key: publicKey,
         email: email,
-        amount: plan.price * 100, // Paystack is calculated in Kobo (NGN * 100)
+        amount: plan.price * 100,
         currency: 'NGN',
         ref: 'APT_HEALTH_' + Math.floor(Math.random() * 1000000000 + 1),
         metadata: {
@@ -78,7 +94,6 @@ export default function SubscriptionPage() {
           ],
         },
         callback: async function (response: any) {
-          // Verify transaction via backend API
           try {
             const res = await fetch('/api/paystack/verify/', {
               method: 'POST',
@@ -90,6 +105,7 @@ export default function SubscriptionPage() {
             setLoading(false);
             if (result.success) {
               alert('Biyan kudi ya kammala tsaf! Ref: ' + response.reference);
+              localStorage.setItem('subscription_active', 'active');
               window.location.href = '/dashboard/';
             } else {
               alert('An samu matsala wajen tabbatar da biyan kudin.');
@@ -111,7 +127,6 @@ export default function SubscriptionPage() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans">
-      {/* Header Bar */}
       <header className="border-b border-slate-800 bg-slate-900/80 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3">
@@ -132,7 +147,6 @@ export default function SubscriptionPage() {
         </div>
       </header>
 
-      {/* Main Container */}
       <div className="max-w-7xl mx-auto px-4 py-16 space-y-12">
         <div className="text-center space-y-4 max-w-3xl mx-auto">
           <span className="px-3 py-1 bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-xs font-bold rounded-full uppercase">
@@ -146,7 +160,6 @@ export default function SubscriptionPage() {
           </p>
         </div>
 
-        {/* Email Input */}
         <div className="max-w-md mx-auto bg-slate-900 border border-slate-800 p-6 rounded-3xl space-y-3 shadow-xl">
           <label className="block text-xs font-bold uppercase tracking-wider text-slate-400">
             Facility Billing Email
@@ -161,8 +174,7 @@ export default function SubscriptionPage() {
           />
         </div>
 
-        {/* Plan Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {(Object.keys(plans) as Array<keyof typeof plans>).map((key) => {
             const plan = plans[key];
             const isSelected = selectedPlan === key;
@@ -170,7 +182,7 @@ export default function SubscriptionPage() {
             return (
               <div
                 key={key}
-                className={`relative rounded-3xl p-8 border transition flex flex-col justify-between space-y-6 ${
+                className={`relative rounded-3xl p-6 border transition flex flex-col justify-between space-y-6 ${
                   isSelected
                     ? 'bg-slate-900 border-cyan-500 shadow-2xl shadow-cyan-500/10'
                     : 'bg-slate-900/50 border-slate-800 hover:border-slate-700'
@@ -183,17 +195,17 @@ export default function SubscriptionPage() {
                 )}
 
                 <div className="space-y-4">
-                  <h3 className="text-xl font-black text-white">{plan.name}</h3>
+                  <h3 className="text-lg font-black text-white">{plan.name}</h3>
                   <p className="text-xs text-slate-400 leading-relaxed">{plan.desc}</p>
 
                   <div className="flex items-baseline gap-1">
-                    <span className="text-3xl font-black text-white">
+                    <span className="text-2xl font-black text-white">
                       ₦{plan.price.toLocaleString()}
                     </span>
                     <span className="text-xs text-slate-500">{plan.period}</span>
                   </div>
 
-                  <ul className="space-y-3 pt-4 border-t border-slate-800/80">
+                  <ul className="space-y-2.5 pt-4 border-t border-slate-800/80">
                     {plan.features.map((feat, index) => (
                       <li key={index} className="flex items-center gap-2 text-xs text-slate-300">
                         <span className="text-cyan-400 font-bold">✓</span> {feat}
@@ -208,7 +220,7 @@ export default function SubscriptionPage() {
                     handlePaystackPayment(key);
                   }}
                   disabled={loading}
-                  className={`w-full py-4 rounded-2xl font-bold text-xs transition shadow-lg ${
+                  className={`w-full py-3.5 rounded-2xl font-bold text-xs transition shadow-lg ${
                     isSelected
                       ? 'bg-cyan-600 hover:bg-cyan-500 text-white shadow-cyan-600/20'
                       : 'bg-slate-800 hover:bg-slate-700 text-slate-200'
@@ -221,12 +233,10 @@ export default function SubscriptionPage() {
           })}
         </div>
 
-        {/* Payment Footer Note */}
         <div className="text-center text-xs text-slate-500 flex items-center justify-center gap-2">
           <span>🔒 Secured 256-Bit SSL Paystack Payment Gateway</span>
         </div>
       </div>
     </div>
   );
-                                  }
-          
+              }
