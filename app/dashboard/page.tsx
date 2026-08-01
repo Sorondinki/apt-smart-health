@@ -86,6 +86,13 @@ export default function DashboardPage() {
             <h2 className="text-2xl font-black text-slate-900">Hospital Command Center</h2>
             <p className="text-xs text-slate-500 mt-0.5">Real-time stats, appointments, and financial telemetry.</p>
           </div>
+          <Link 
+  href="/dashboard/staff/" 
+  className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-cyan-600/20 transition flex items-center gap-2"
+>
+  <span>👨‍⚕️</span> Recruit & Manage Staff
+</Link>
+          
           <div className="flex items-center gap-3">
             <span className="px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-200 flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
