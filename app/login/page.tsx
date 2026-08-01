@@ -10,32 +10,58 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  // States don "Forgot Password" Modal
+  // States for Forgot Password Modal
   const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
   const [isResetSending, setIsResetSending] = useState(false);
   const [resetSent, setResetSent] = useState(false);
 
+  // 🔒 AINIHIN EMAIL ƊIN SUPER ADMIN KANḲANTA (HARDCODED FOR SECURITY)
+  const SUPER_ADMIN_EMAIL = 'sorondinkiseeme@gmail.com'; // Saka ainihin email dinka a nan
+
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simulated Authentication Delay
     setTimeout(() => {
       setIsLoading(false);
-      router.push('/dashboard'); 
-    }, 1200);
+      const cleanEmail = email.trim().toLowerCase();
+
+      // Check if user has been banned/kicked by Super Admin
+      const bannedUsers = JSON.parse(localStorage.getItem('apt_banned_users') || '[]');
+      if (bannedUsers.includes(cleanEmail)) {
+        alert('Access Denied: Your account has been suspended or revoked by the Super Admin.');
+        return;
+      }
+      
+      // 🔑 1. Save Auth Session
+      localStorage.setItem('isLoggedIn', 'true');
+      localStorage.setItem('userEmail', cleanEmail);
+
+      // 🔑 2. Initialize Trial Date if not set
+      if (!localStorage.getItem('apt_reg_date')) {
+        localStorage.setItem('apt_reg_date', new Date().toISOString());
+      }
+
+      // 🔑 3. STRICT SUPER ADMIN CHECK (EXACT EMAIL MATCH ONLY)
+      if (cleanEmail === SUPER_ADMIN_EMAIL.toLowerCase()) {
+        localStorage.setItem('userRole', 'SUPER_ADMIN');
+      } else {
+        localStorage.setItem('userRole', 'HOSPITAL_ADMIN');
+      }
+
+      router.push('/dashboard');
+    }, 1000);
   };
 
-  const handleResetPassword = (e: React.FormEvent) => {
+  const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsResetSending(true);
 
-    // Simulated Password Reset Sending
     setTimeout(() => {
       setIsResetSending(false);
       setResetSent(true);
-    }, 1500);
+    }, 1200);
   };
 
   const closeResetModal = () => {
@@ -47,7 +73,6 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col justify-center py-12 sm:px-6 lg:px-8 font-sans relative">
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
-        {/* Brand Icon & Name */}
         <Link href="/" className="inline-flex items-center gap-2 mb-4">
           <div className="w-12 h-12 rounded-xl bg-sky-600 flex items-center justify-center font-black text-white text-2xl shadow-lg shadow-sky-600/30">
             A
@@ -74,7 +99,7 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="doctor@hospital.com"
-                className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-sky-600 focus:border-sky-600 text-sm outline-none transition"
+                className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-sky-600 text-sm outline-none transition text-slate-900"
               />
             </div>
 
@@ -88,7 +113,7 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-sky-600 focus:border-sky-600 text-sm outline-none transition"
+                className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-sky-600 text-sm outline-none transition text-slate-900"
               />
             </div>
 
@@ -101,7 +126,6 @@ export default function LoginPage() {
                 Remember me
               </label>
 
-              {/* Forgot Password Link Button */}
               <button
                 type="button"
                 onClick={() => setIsForgotPasswordOpen(true)}
@@ -136,10 +160,10 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* --- FORGOT PASSWORD MODAL POP-UP --- */}
+      {/* Forgot Password Modal */}
       {isForgotPasswordOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 animate-in fade-in zoom-in duration-200">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-black text-slate-900">Reset Password</h3>
               <button
@@ -183,7 +207,7 @@ export default function LoginPage() {
                     value={resetEmail}
                     onChange={(e) => setResetEmail(e.target.value)}
                     placeholder="doctor@hospital.com"
-                    className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-sky-600 text-sm outline-none transition"
+                    className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-sky-600 text-sm outline-none transition text-slate-900"
                   />
                 </div>
 
@@ -217,5 +241,4 @@ export default function LoginPage() {
       )}
     </div>
   );
-    }
-          
+      }
