@@ -309,12 +309,31 @@ export default function DoctorConsolePage() {
                 </div>
               </div>
 
-              <button
-                onClick={() => alert(`E-Prescription successfully sent for ${activePatient.name} to Patient EHR & Integrated Pharmacy!`)}
-                className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-emerald-600/20 transition"
-              >
-                Send Prescription to Pharmacy
-              </button>
+              {/* Selection Mode for Destination */}
+<div className="grid grid-cols-2 gap-2 mb-3">
+  <button 
+    type="button"
+    onClick={() => setOrderType('pharmacy')}
+    className={`py-2 text-xs font-bold rounded-xl border ${orderType === 'pharmacy' ? 'bg-sky-600 border-sky-500 text-white' : 'bg-slate-900 border-slate-700 text-slate-400'}`}
+  >
+    💊 Pharmacy Order
+  </button>
+  <button 
+    type="button"
+    onClick={() => setOrderType('lab')}
+    className={`py-2 text-xs font-bold rounded-xl border ${orderType === 'lab' ? 'bg-purple-600 border-purple-500 text-white' : 'bg-slate-900 border-slate-700 text-slate-400'}`}
+  >
+    🔬 Laboratory Order
+  </button>
+</div>
+
+<button
+  onClick={() => alert(`Order for ${activePatient.name} successfully routed to ${orderType.toUpperCase()} & Patient EHR!`)}
+  className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-emerald-600/20 transition"
+>
+  Send Request to {orderType === 'pharmacy' ? 'Pharmacy' : 'Laboratory'}
+</button>
+
             </div>
           </div>
         </div>
