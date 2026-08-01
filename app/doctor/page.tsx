@@ -98,6 +98,7 @@ export default function DoctorConsolePage() {
 
       {/* Main Consultation Layout Grid */}
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 p-4 sm:p-6 max-w-7xl mx-auto w-full">
+        
         {/* Left Column: Active Video Consultation Window */}
         <div className="lg:col-span-8 flex flex-col gap-4">
           <div className="bg-slate-950 rounded-3xl border border-slate-800 relative min-h-[380px] sm:min-h-[460px] flex items-center justify-center overflow-hidden shadow-2xl">
@@ -317,8 +318,9 @@ export default function DoctorConsolePage() {
             </div>
           </div>
         </div>
+
       </div>
     </div>
   );
-      }
-                      
+            }
+            
