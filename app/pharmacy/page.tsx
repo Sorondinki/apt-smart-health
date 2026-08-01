@@ -1,193 +1,196 @@
 'use client';
-import React, { useState } from 'react';
-import {
-Pill,
-Search,
-Plus,
-ShoppingCart,
-AlertTriangle,
-TrendingUp,
-DollarSign,
-Package,
-CheckCircle2,
-Clock
-} from 'lucide-react';
-interface Medicine {
-id: string;
-name: string;
-category: string;
-stock: number;
-unitPrice: number;
-expiryDate: string;
-status: 'In Stock' | 'Low Stock' | 'Out of Stock';
-}
-export default function PharmacyPage() {
-const [activeTab, setActiveTab] = useState<'inventory' | 'pos' | 'prescriptions'>('inventory');
-const [searchTerm, setSearchTerm] = useState('');
-// Sample data for Demonstration
-const [medicines] = useState<Medicine[]>([
-{ id: 'MED-001', name: 'Paracetamol 500mg', category: 'Analgesic', stock: 450, unitPrice: 200, expiryDate: '2026-11-20', status: 'In Stock' },
-{ id: 'MED-002', name: 'Amoxicillin 500mg', category: 'Antibiotic', stock: 12, unitPrice: 1200, expiryDate: '2025-08-15', status: 'Low Stock' },
-{ id: 'MED-003', name: 'Ciprofloxacin 500mg', category: 'Antibiotic', stock: 0, unitPrice: 1800, expiryDate: '2025-10-01', status: 'Out of Stock' },
-{ id: 'MED-004', name: 'Artemether/Lumefantrine', category: 'Antimalarial', stock: 120, unitPrice: 2500, expiryDate: '2027-01-10', status: 'In Stock' },
-{ id: 'MED-005', name: 'Ibuprofen 400mg', category: 'Anti-inflammatory', stock: 85, unitPrice: 350, expiryDate: '2026-05-30', status: 'In Stock' },
-]);
-const filteredMedicines = medicines.filter(m =>
-m.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-m.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-m.id.toLowerCase().includes(searchTerm.toLowerCase())
-);
-return (
-<div className="p-6 bg-slate-50 min-h-screen text-slate-800">
-{/* Header */}
-<div className="flex flex-col md:flex-row md:items-center justify-between pb-6 border-b border-slate-200 gap-4">
-<div>
-<h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-<Pill className="text-teal-600 h-7 w-7" />
-Pharmacy & Dispense Management
-</h1>
-<p className="text-sm text-slate-500 mt-1">Gudanar da magunguna, sayarwa, da duba takardun magani</p>
-</div>
-<div className="flex items-center gap-3">
-<button className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors">
-<Plus className="w-4 h-4" /> Kara Magani Suba
-</button>
-</div>
-</div>
-{/* Metrics Cards */}
-<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 my-6">
-<div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-<div>
-<p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Jimillar Magunguna</p>
-<h3 className="text-2xl font-bold text-slate-800 mt-1">1,240</h3>
-<span className="text-xs text-emerald-600 font-medium flex items-center gap-1 mt-1">
-<TrendingUp className="w-3 h-3" /> +5 sababbi
-</span>
-</div>
-<div className="p-3 bg-teal-50 text-teal-600 rounded-lg">
-<Package className="w-6 h-6" />
-</div>
-</div>
-<div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-<div>
-<p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Mazaunawa (Low Stock)</p>
-<h3 className="text-2xl font-bold text-amber-600 mt-1">8</h3>
-<span className="text-xs text-amber-600 font-medium mt-1">Yana bukatan odar gaggawa</span>
-</div>
-<div className="p-3 bg-amber-50 text-amber-600 rounded-lg">
-<AlertTriangle className="w-6 h-6" />
-</div>
-</div>
-<div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-<div>
-<p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Kudin Sayarwa Yau</p>
-<h3 className="text-2xl font-bold text-slate-800 mt-1">₦145,200</h3>
-<span className="text-xs text-emerald-600 font-medium flex items-center gap-1 mt-1">
-<TrendingUp className="w-3 h-3" /> 12% sama da jiya
-</span>
-</div>
-<div className="p-3 bg-emerald-50 text-emerald-600 rounded-lg">
-<DollarSign className="w-6 h-6" />
-</div>
-</div>
-<div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-<div>
-<p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Prescriptions Pending</p>
-<h3 className="text-2xl font-bold text-blue-600 mt-1">14</h3>
-<span className="text-xs text-slate-500 mt-1">Daga dakin likitoci</span>
-</div>
-<div className="p-3 bg-blue-50 text-blue-600 rounded-lg">
-<Clock className="w-6 h-6" />
-</div>
-</div>
-</div>
-{/* Navigation Tabs */}
-<div className="flex border-b border-slate-200 mb-6 bg-white rounded-t-xl px-4 pt-2">
-<button
-onClick={() => setActiveTab('inventory')}
-className={py-3 px-5 font-medium text-sm flex items-center gap-2 border-b-2 transition-all ${ activeTab === 'inventory' ? 'border-teal-600 text-teal-600' : 'border-transparent text-slate-500 hover:text-slate-800' }}
->
-<Package className="w-4 h-4" /> Magungunan da ke Akwai (Inventory)
-</button>
-<button
-onClick={() => setActiveTab('pos')}
-className={py-3 px-5 font-medium text-sm flex items-center gap-2 border-b-2 transition-all ${ activeTab === 'pos' ? 'border-teal-600 text-teal-600' : 'border-transparent text-slate-500 hover:text-slate-800' }}
->
-<ShoppingCart className="w-4 h-4" /> Banta / Sayarwa (POS)
-</button>
-</div>
-{/* Main Content Area /}
-{activeTab === 'inventory' && (
-<div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-{/ Table Search Header */}
-<div className="p-4 border-b border-slate-200 flex flex-col sm:flex-row justify-between gap-4">
-<div className="relative flex-1 max-w-md">
-<Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
-<input
-type="text"
-placeholder="Nemi magani ta suna, rukuni ko code..."
-value={searchTerm}
-onChange={(e) => setSearchTerm(e.target.value)}
-className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-/>
-</div>
-</div>
-{/* Table */}
-<div className="overflow-x-auto">
-<table className="w-full text-left text-sm">
-<thead className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
-<tr>
-<th className="py-3.5 px-4">Lambar Magani (ID)</th>
-<th className="py-3.5 px-4">Sunan Magani</th>
-<th className="py-3.5 px-4">Rukuni (Category)</th>
-<th className="py-3.5 px-4">Adadin Stock</th>
-<th className="py-3.5 px-4">Farashin Ɗaya (NGN)</th>
-<th className="py-3.5 px-4">Ranar Karewa (Expiry)</th>
-<th className="py-3.5 px-4">Matsayi (Status)</th>
-</tr>
-</thead>
-<tbody className="divide-y divide-slate-100 text-slate-700">
-{filteredMedicines.map((med) => (
-<tr key={med.id} className="hover:bg-slate-50/80 transition-colors">
-<td className="py-3 px-4 font-mono text-xs font-semibold text-slate-500">{med.id}</td>
-<td className="py-3 px-4 font-medium text-slate-900">{med.name}</td>
-<td className="py-3 px-4 text-slate-500">{med.category}</td>
-<td className="py-3 px-4 font-semibold">{med.stock} pcs</td>
-<td className="py-3 px-4">₦{med.unitPrice.toLocaleString()}</td>
-<td className="py-3 px-4 text-slate-500">{med.expiryDate}</td>
-<td className="py-3 px-4">
-{med.status === 'In Stock' && (
-<span className="bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full text-xs font-medium inline-flex items-center gap-1">
-<CheckCircle2 className="w-3 h-3" /> Akwai
-</span>
-)}
-{med.status === 'Low Stock' && (
-<span className="bg-amber-50 text-amber-700 px-2.5 py-1 rounded-full text-xs font-medium inline-flex items-center gap-1">
-<AlertTriangle className="w-3 h-3" /> Yayi Kadan
-</span>
-)}
-{med.status === 'Out of Stock' && (
-<span className="bg-red-50 text-red-700 px-2.5 py-1 rounded-full text-xs font-medium inline-flex items-center gap-1">
-<AlertTriangle className="w-3 h-3" /> Ya Kare
-</span>
-)}
-</td>
-</tr>
-))}
-</tbody>
-</table>
-</div>
-</div>
-)}
-{activeTab === 'pos' && (
-<div className="bg-white p-8 rounded-xl border border-slate-200 text-center py-16">
-<ShoppingCart className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-<h3 className="text-lg font-bold text-slate-800">Sashen Sayar da Magani (Point of Sale)</h3>
-<p className="text-slate-500 text-sm max-w-md mx-auto mt-1">
-Anan za a zabi marar lafiya ko mai siyan magani na waje, a zabi magunguna kuma a fitar da rasit din biya tare da ragewa daga ma'ajiya.
-</p>
-</div>
-)}
-</div>
-);
- }
+
+import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
+
+export default function PharmacyDashboardPage() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // 🔐 AUTHENTICATION GUARD
+  useEffect(() => {
+    const isLoggedIn = localStorage.getItem('isLoggedIn');
+    if (!isLoggedIn) {
+      window.location.href = '/login/';
+    } else {
+      setIsAuthenticated(true);
+    }
+  }, []);
+
+  // INCOMING PRESCRIPTIONS FROM DOCTORS
+  const [pendingPrescriptions, setPendingPrescriptions] = useState([
+    {
+      id: 'RX-901',
+      patientName: 'Amina Ibrahim',
+      patientId: 'APT-8902',
+      doctorName: 'Dr. Jamilu Sadiq',
+      medication: 'Paracetamol 500mg',
+      dosage: '2 tabs x 3 daily (5 Days)',
+      unitPrice: 1500,
+      status: 'Pending Valuation',
+    },
+    {
+      id: 'RX-902',
+      patientName: 'Usman Bello',
+      patientId: 'APT-7710',
+      doctorName: 'Dr. Jamilu Sadiq',
+      medication: 'Amoxicillin 250mg',
+      dosage: '1 cap x 2 daily (7 Days)',
+      unitPrice: 3200,
+      status: 'Pending Valuation',
+    },
+  ]);
+
+  // DRUG INVENTORY LIST
+  const [inventory] = useState([
+    { id: 'DRG-01', name: 'Paracetamol 500mg', stock: 450, category: 'Analgesics', price: 1500 },
+    { id: 'DRG-02', name: 'Amoxicillin 250mg', stock: 120, category: 'Antibiotics', price: 3200 },
+    { id: 'DRG-03', name: 'Ciprofloxacin 500mg', stock: 85, category: 'Antibiotics', price: 4500 },
+    { id: 'DRG-04', name: 'Ibuprofen 400mg', stock: 300, category: 'NSAIDs', price: 1800 },
+  ]);
+
+  const handleSendToFinance = (prescriptionId: string, patientName: string, amount: number) => {
+    alert(`Bill of ₦${amount.toLocaleString()} for ${patientName} (${prescriptionId}) successfully generated and dispatched to Finance / Accounts section!`);
+    setPendingPrescriptions(prev => prev.filter(item => item.id !== prescriptionId));
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-slate-900 text-slate-400 flex items-center justify-center text-xs font-bold">
+        Checking authentication session...
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-slate-900 text-slate-100 font-sans flex flex-col">
+      <header className="border-b border-slate-800 bg-slate-950/80 backdrop-blur-md sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-emerald-600 flex items-center justify-center font-black text-white text-lg shadow-lg shadow-emerald-600/30">
+              💊
+            </div>
+            <div>
+              <h1 className="font-extrabold text-sm sm:text-base text-white tracking-tight">
+                APT Pharmacy & Dispensary Module
+              </h1>
+              <p className="text-[10px] text-slate-400">Inventory & E-Prescription Fulfillment</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <Link
+              href="/dashboard/"
+              className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-700 transition"
+            >
+              ← Hospital Dashboard
+            </Link>
+          </div>
+        </div>
+      </header>
+
+      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-5">
+            <p className="text-xs font-bold text-slate-400 uppercase">Incoming Doctor Orders</p>
+            <h2 className="text-2xl font-black text-amber-400 mt-1">{pendingPrescriptions.length} Orders</h2>
+          </div>
+
+          <div className="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-5">
+            <p className="text-xs font-bold text-slate-400 uppercase">Total Inventory Items</p>
+            <h2 className="text-2xl font-black text-sky-400 mt-1">{inventory.length} Products</h2>
+          </div>
+
+          <div className="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-5">
+            <p className="text-xs font-bold text-slate-400 uppercase">Low Stock Alerts</p>
+            <h2 className="text-2xl font-black text-emerald-400 mt-1">0 Items</h2>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Pending Prescriptions Column */}
+          <div className="lg:col-span-7 bg-slate-800/40 border border-slate-700/50 rounded-3xl p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                Incoming E-Prescriptions from Doctors
+              </h3>
+              <span className="px-2 py-0.5 rounded-full text-[10px] bg-amber-500/20 text-amber-400 font-bold border border-amber-500/30">
+                Action Required
+              </span>
+            </div>
+
+            {pendingPrescriptions.length === 0 ? (
+              <div className="p-8 text-center bg-slate-900/50 rounded-2xl border border-slate-800 text-xs text-slate-500">
+                No pending prescriptions to process.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {pendingPrescriptions.map(rx => (
+                  <div key={rx.id} className="p-4 bg-slate-900 border border-slate-700/80 rounded-2xl space-y-3">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <span className="text-[10px] font-bold text-sky-400 bg-sky-500/10 px-2 py-0.5 rounded">
+                          {rx.id}
+                        </span>
+                        <h4 className="font-extrabold text-sm text-white mt-1">{rx.patientName} ({rx.patientId})</h4>
+                        <p className="text-[11px] text-slate-400">Prescribed by {rx.doctorName}</p>
+                      </div>
+                      <span className="text-xs font-bold text-emerald-400">
+                        ₦{rx.unitPrice.toLocaleString()}
+                      </span>
+                    </div>
+
+                    <div className="p-3 bg-slate-950/60 rounded-xl border border-slate-800 text-xs space-y-1">
+                      <p className="text-slate-200 font-bold">💊 {rx.medication}</p>
+                      <p className="text-slate-400 text-[11px]">Dosage: {rx.dosage}</p>
+                    </div>
+
+                    <button
+                      onClick={() => handleSendToFinance(rx.id, rx.patientName, rx.unitPrice)}
+                      className="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-2"
+                    >
+                      <span>Send Bill to Finance Section</span>
+                      <span>→</span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Pharmacy Drug Stock Column */}
+          <div className="lg:col-span-5 bg-slate-800/40 border border-slate-700/50 rounded-3xl p-6 space-y-4">
+            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+              Pharmacy Drug Stock & Catalog
+            </h3>
+
+            <input
+              type="text"
+              placeholder="Search medication..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none focus:border-emerald-500 transition"
+            />
+
+            <div className="space-y-2 max-h-[380px] overflow-y-auto pr-1">
+              {inventory
+                .filter(item => item.name.toLowerCase().includes(searchQuery.toLowerCase()))
+                .map(item => (
+                  <div key={item.id} className="p-3 bg-slate-900/80 border border-slate-800 rounded-xl flex items-center justify-between">
+                    <div>
+                      <p className="font-bold text-xs text-slate-200">{item.name}</p>
+                      <p className="text-[10px] text-slate-400">{item.category} • ₦{item.price.toLocaleString()}</p>
+                    </div>
+                    <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded">
+                      In Stock: {item.stock}
+                    </span>
+                  </div>
+                ))}
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+              }
+           
