@@ -3,12 +3,20 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 
-export default function FinanceDashboardPage() {
+export default function HospitalFinanceDashboard() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [hasActiveSubscription, setHasActiveSubscription] = useState(true);
-  const [trialDaysLeft, setTrialDaysLeft] = useState(3); // Example trial state
 
-  // PENDING PATIENT BILLS SENT FROM PHARMACY / DOCTORS / RECEPTION
+  // 🔐 AUTHENTICATION GUARD
+  useEffect(() => {
+    const isLoggedIn = localStorage.getItem('isLoggedIn');
+    if (!isLoggedIn) {
+      window.location.href = '/login/';
+    } else {
+      setIsAuthenticated(true);
+    }
+  }, []);
+
+  // PENDING BILLS FROM PHARMACY / LAB / RECEPTION
   const [pendingBills, setPendingBills] = useState([
     {
       id: 'INV-1001',
@@ -18,7 +26,6 @@ export default function FinanceDashboardPage() {
       description: 'Paracetamol 500mg x 1 Pack',
       amount: 1500,
       status: 'Unpaid',
-      date: '2026-08-01',
     },
     {
       id: 'INV-1002',
@@ -28,54 +35,21 @@ export default function FinanceDashboardPage() {
       description: 'General OPD Consultation Fee',
       amount: 3000,
       status: 'Unpaid',
-      date: '2026-08-01',
-    },
-    {
-      id: 'INV-1003',
-      patientName: 'Fatima Abubakar',
-      patientId: 'APT-5501',
-      serviceType: 'Online Private Consultation',
-      description: 'Virtual Telemedicine Call (Tier 1)',
-      amount: 5000,
-      status: 'Unpaid',
-      date: '2026-08-01',
     },
   ]);
 
   const [completedTransactions, setCompletedTransactions] = useState([
-    { id: 'TX-900', patientName: 'Kabiru Sanusi', amount: 4500, type: 'Lab Test', date: '2026-08-01' },
-    { id: 'TX-899', patientName: 'Zainab Dahiru', amount: 2000, type: 'Card Registration', date: '2026-08-01' },
+    { id: 'TX-900', patientName: 'Kabiru Sanusi', amount: 4500, type: 'Lab Test', paymentMethod: 'POS' },
+    { id: 'TX-899', patientName: 'Zainab Dahiru', amount: 2000, type: 'Card Registration', paymentMethod: 'Cash' },
   ]);
 
-  // 🔐 AUTHENTICATION & SUBSCRIPTION CHECK GUARD
-  useEffect(() => {
-    const isLoggedIn = localStorage.getItem('isLoggedIn');
-    if (!isLoggedIn) {
-      window.location.href = '/login/';
-      return;
-    }
-    setIsAuthenticated(true);
-
-    // Check Subscription status (Simulated with localStorage or state)
-    const subStatus = localStorage.getItem('subscription_active');
-    if (subStatus === 'expired') {
-      setHasActiveSubscription(false);
-    }
-  }, []);
-
   const handleProcessPayment = (billId: string, amount: number, patientName: string) => {
-    alert(`Payment of ₦${amount.toLocaleString()} received for ${patientName}. Receipt generated!`);
+    alert(`Payment of ₦${amount.toLocaleString()} processed for ${patientName}! Official Receipt Printed.`);
     setPendingBills(prev => prev.filter(bill => bill.id !== billId));
     setCompletedTransactions(prev => [
-      { id: `TX-${Math.floor(100 + Math.random() * 900)}`, patientName, amount, type: 'Direct Billing', date: '2026-08-01' },
+      { id: `TX-${Math.floor(100 + Math.random() * 900)}`, patientName, amount, type: 'Direct Billing', paymentMethod: 'Cash' },
       ...prev,
     ]);
-  };
-
-  const handleActivateSubscription = (planName: string) => {
-    alert(`Redirecting to Paystack gateway for ${planName} activation...`);
-    localStorage.setItem('subscription_active', 'active');
-    setHasActiveSubscription(true);
   };
 
   if (!isAuthenticated) {
@@ -86,61 +60,11 @@ export default function FinanceDashboardPage() {
     );
   }
 
-  // 🚫 BLOCKING MODAL IF FREE TRIAL / SUBSCRIPTION IS EXPIRED
-  if (!hasActiveSubscription) {
-    return (
-      <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-6">
-        <div className="max-w-xl w-full bg-slate-900 border border-red-500/30 rounded-3xl p-8 space-y-6 text-center shadow-2xl">
-          <div className="w-16 h-16 bg-red-500/10 border border-red-500/20 text-red-400 rounded-full flex items-center justify-center mx-auto text-3xl">
-            🔒
-          </div>
-          <div className="space-y-2">
-            <h2 className="text-2xl font-black text-white">Subscription / Free Trial Expired</h2>
-            <p className="text-xs text-slate-400">
-              Access to your APT Health Portal has been temporarily locked. Please select a subscription tier below to continue serving your patients and managing revenue.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-left">
-            <div className="p-4 bg-slate-800/80 border border-slate-700 rounded-2xl space-y-2">
-              <span className="text-[10px] uppercase font-bold text-sky-400 bg-sky-500/10 px-2 py-0.5 rounded">
-                Tier 1
-              </span>
-              <h4 className="font-bold text-sm text-white">Private Consultant Plan</h4>
-              <p className="text-[11px] text-slate-400">For solo doctors offering direct online consultations.</p>
-              <p className="text-base font-black text-white">₦15,000 <span className="text-[10px] text-slate-400">/ month</span></p>
-              <button
-                onClick={() => handleActivateSubscription('Tier 1 Private Consultant')}
-                className="w-full py-2 bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs rounded-xl transition"
-              >
-                Pay & Unlock
-              </button>
-            </div>
-
-            <div className="p-4 bg-slate-800/80 border border-slate-700 rounded-2xl space-y-2">
-              <span className="text-[10px] uppercase font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">
-                Tier 2
-              </span>
-              <h4 className="font-bold text-sm text-white">Hospital / Clinic Pro</h4>
-              <p className="text-[11px] text-slate-400">Full reception, pharmacy, lab, and staff access.</p>
-              <p className="text-base font-black text-white">₦45,000 <span className="text-[10px] text-slate-400">/ month</span></p>
-              <button
-                onClick={() => handleActivateSubscription('Tier 2 Hospital Pro')}
-                className="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl transition"
-              >
-                Pay & Unlock
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   const totalRevenue = completedTransactions.reduce((acc, curr) => acc + curr.amount, 0);
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 font-sans flex flex-col">
+      {/* Top Header */}
       <header className="border-b border-slate-800 bg-slate-950/80 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -149,16 +73,13 @@ export default function FinanceDashboardPage() {
             </div>
             <div>
               <h1 className="font-extrabold text-sm sm:text-base text-white tracking-tight">
-                APT Revenue & Cashier Billing Console
+                Hospital Accounts & Cashier Portal
               </h1>
-              <p className="text-[10px] text-slate-400">Payroll, Invoicing & Subscription Status</p>
+              <p className="text-[10px] text-slate-400">Patient Billing & Internal Hospital Revenue</p>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
-            <span className="hidden sm:inline-block px-3 py-1 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold rounded-full">
-              Trial Active: {trialDaysLeft} Days Remaining
-            </span>
             <Link
               href="/dashboard/"
               className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-700 transition"
@@ -169,45 +90,37 @@ export default function FinanceDashboardPage() {
         </div>
       </header>
 
+      {/* Main Content */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-6">
-        {/* REVENUE OVERVIEW CARDS */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        {/* Statistics Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-5">
-            <p className="text-xs font-bold text-slate-400 uppercase">Total Today's Collection</p>
+            <p className="text-xs font-bold text-slate-400 uppercase">Today's Revenue Collected</p>
             <h2 className="text-2xl font-black text-emerald-400 mt-1">₦{totalRevenue.toLocaleString()}</h2>
           </div>
 
           <div className="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-5">
-            <p className="text-xs font-bold text-slate-400 uppercase">Pending Unpaid Invoices</p>
+            <p className="text-xs font-bold text-slate-400 uppercase">Unpaid Invoices Pending</p>
             <h2 className="text-2xl font-black text-amber-400 mt-1">{pendingBills.length} Bills</h2>
           </div>
 
           <div className="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-5">
-            <p className="text-xs font-bold text-slate-400 uppercase">Estimated Monthly Payroll</p>
-            <h2 className="text-2xl font-black text-sky-400 mt-1">₦450,000</h2>
-          </div>
-
-          <div className="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-5">
-            <p className="text-xs font-bold text-slate-400 uppercase">Platform Subscription Tier</p>
-            <h2 className="text-xl font-black text-purple-400 mt-1">Tier 2 Pro</h2>
+            <p className="text-xs font-bold text-slate-400 uppercase">Total Completed Payments</p>
+            <h2 className="text-2xl font-black text-sky-400 mt-1">{completedTransactions.length} Receipts</h2>
           </div>
         </div>
 
+        {/* Action Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* PENDING BILLS LIST */}
+          {/* Pending Bills Column */}
           <div className="lg:col-span-7 bg-slate-800/40 border border-slate-700/50 rounded-3xl p-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                Unpaid Invoices Sent to Cashier
-              </h3>
-              <span className="px-2 py-0.5 rounded-full text-[10px] bg-amber-500/20 text-amber-400 font-bold border border-amber-500/30">
-                Pending Cash/Transfer
-              </span>
-            </div>
+            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+              Pending Patient Bills (Cashier Queue)
+            </h3>
 
             {pendingBills.length === 0 ? (
               <div className="p-8 text-center bg-slate-900/50 rounded-2xl border border-slate-800 text-xs text-slate-500">
-                No pending bills awaiting payment.
+                No pending invoices awaiting payment at the cashier counter.
               </div>
             ) : (
               <div className="space-y-3">
@@ -228,9 +141,9 @@ export default function FinanceDashboardPage() {
 
                     <button
                       onClick={() => handleProcessPayment(bill.id, bill.amount, bill.patientName)}
-                      className="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-2"
+                      className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-2"
                     >
-                      <span>Approve & Collect Payment (Cash / POS)</span>
+                      <span>Collect Payment & Issue Receipt (Cash / POS)</span>
                       <span>✓</span>
                     </button>
                   </div>
@@ -239,56 +152,29 @@ export default function FinanceDashboardPage() {
             )}
           </div>
 
-          {/* MONETIZATION & SUBSCRIPTION OPTIONS FOR SYSTEM OWNER */}
+          {/* Recent Paid Transactions History */}
           <div className="lg:col-span-5 bg-slate-800/40 border border-slate-700/50 rounded-3xl p-6 space-y-4">
             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-              Monetization & Software Tiers
+              Recent Completed Receipts
             </h3>
 
-            <div className="space-y-3">
-              {/* TIER 1 */}
-              <div className="p-4 bg-slate-900/90 border border-slate-800 rounded-2xl space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold text-sky-400 bg-sky-500/10 px-2 py-0.5 rounded">
-                    TIER 1: PRIVATE CONSULTANT
+            <div className="space-y-2">
+              {completedTransactions.map(tx => (
+                <div key={tx.id} className="p-3 bg-slate-900/80 border border-slate-800 rounded-xl flex items-center justify-between">
+                  <div>
+                    <p className="font-bold text-xs text-slate-200">{tx.patientName}</p>
+                    <p className="text-[10px] text-slate-400">{tx.type} • {tx.paymentMethod}</p>
+                  </div>
+                  <span className="text-xs font-black text-emerald-400">
+                    +₦{tx.amount.toLocaleString()}
                   </span>
-                  <span className="text-xs font-black text-white">₦15,000 / mo</span>
                 </div>
-                <p className="text-xs text-slate-300 font-medium">
-                  Designed for independent private doctors offering direct online calls/prescriptions without a physical hospital.
-                </p>
-              </div>
-
-              {/* TIER 2 */}
-              <div className="p-4 bg-slate-900/90 border border-slate-800 rounded-2xl space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">
-                    TIER 2: CLINIC / SMALL HOSPITAL
-                  </span>
-                  <span className="text-xs font-black text-white">₦35,000 / mo</span>
-                </div>
-                <p className="text-xs text-slate-300 font-medium">
-                  Standalone registration, maximum 5 staff logins, pharmacy stock, and cashier module.
-                </p>
-              </div>
-
-              {/* TIER 3 */}
-              <div className="p-4 bg-slate-900/90 border border-slate-800 rounded-2xl space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded">
-                    TIER 3: FULL HOSPITAL ENTERPRISE
-                  </span>
-                  <span className="text-xs font-black text-white">₦75,000 / mo</span>
-                </div>
-                <p className="text-xs text-slate-300 font-medium">
-                  Unlimited staff logins, centralized reception files, lab integration, multi-doctor call queues, and automated monthly staff payroll.
-                </p>
-              </div>
+              ))}
             </div>
           </div>
         </div>
       </main>
     </div>
   );
-    }
-              
+      }
+                        
