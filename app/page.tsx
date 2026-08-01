@@ -7,7 +7,6 @@ export default function LandingPage() {
   const [activeTab, setActiveTab] = useState<'recovery' | 'triage'>('recovery');
   const [currentAdIndex, setCurrentAdIndex] = useState(0);
 
-  // Advertisements Carousel Data with Images & Feature Lists
   const adCards = [
     {
       id: 1,
@@ -41,7 +40,6 @@ export default function LandingPage() {
     },
   ];
 
-  // Auto-Slide Feature for Ads
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentAdIndex((prev) => (prev + 1) % adCards.length);
@@ -66,7 +64,7 @@ export default function LandingPage() {
 
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100 font-sans">
-      {/* Top Navigation */}
+      {/* Top Navbar */}
       <nav className="border-b border-slate-800 bg-slate-950/80 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -80,17 +78,17 @@ export default function LandingPage() {
           </div>
 
           <div className="flex items-center gap-3">
-            <Link href="/login/" className="text-xs text-slate-300 hover:text-white font-bold px-3 py-2">
+            <Link className="text-xs text-slate-300 hover:text-white font-bold px-3 py-2" href="/login">
               Sign In
             </Link>
-            <Link href="/register/" className="px-4 py-2 bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-black rounded-xl transition">
+            <Link className="px-4 py-2 bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-black rounded-xl transition" href="/register">
               Register Facility
             </Link>
           </div>
         </div>
       </nav>
 
-      {/* 🚀 1. HIGH-VALUE TOP SPONSORED BANNER SHOWCASE */}
+      {/* Top Sponsored Spotlight */}
       <div className="bg-gradient-to-r from-cyan-950 via-slate-900 to-indigo-950 border-b border-cyan-500/20 py-3 px-6">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
           <div className="flex items-center gap-3">
@@ -101,10 +99,7 @@ export default function LandingPage() {
               🌟 <span className="text-cyan-400">Kano Diagnostic Center:</span> Get Free Blood Sugar & BP Triage on all clinic visits this week!
             </p>
           </div>
-          <Link
-            href="/contact/"
-            className="text-[11px] font-black text-cyan-400 hover:text-cyan-300 border border-cyan-500/30 px-3 py-1 rounded-lg bg-cyan-500/10 transition"
-          >
+          <Link className="text-[11px] font-black text-cyan-400 hover:text-cyan-300 border border-cyan-500/30 px-3 py-1 rounded-lg bg-cyan-500/10 transition" href="/contact">
             Saka Naka Babban Talla A Nan →
           </Link>
         </div>
@@ -124,26 +119,26 @@ export default function LandingPage() {
 
         {/* Dynamic Navigation Portals */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4 max-w-3xl mx-auto">
-          <Link href="/dashboard/" className="p-4 bg-slate-900 border border-slate-800 hover:border-cyan-500 rounded-2xl text-center space-y-1 transition group">
+          <Link className="p-4 bg-slate-900 border border-slate-800 hover:border-cyan-500 rounded-2xl text-center space-y-1 transition group" href="/dashboard">
             <div className="text-2xl group-hover:scale-110 transition">🏥</div>
             <div className="text-xs font-bold text-white">Hospital Admin</div>
           </Link>
-          <Link href="/clinic/" className="p-4 bg-slate-900 border border-slate-800 hover:border-cyan-500 rounded-2xl text-center space-y-1 transition group">
+          <Link className="p-4 bg-slate-900 border border-slate-800 hover:border-cyan-500 rounded-2xl text-center space-y-1 transition group" href="/clinic">
             <div className="text-2xl group-hover:scale-110 transition">🩺</div>
             <div className="text-xs font-bold text-white">Outpatient Clinic</div>
           </Link>
-          <Link href="/doctor/" className="p-4 bg-slate-900 border border-slate-800 hover:border-cyan-500 rounded-2xl text-center space-y-1 transition group">
+          <Link className="p-4 bg-slate-900 border border-slate-800 hover:border-cyan-500 rounded-2xl text-center space-y-1 transition group" href="/doctor">
             <div className="text-2xl group-hover:scale-110 transition">👨‍⚕️</div>
             <div className="text-xs font-bold text-white">Doctor Console</div>
           </Link>
-          <Link href="/patient/" className="p-4 bg-slate-900 border border-slate-800 hover:border-cyan-500 rounded-2xl text-center space-y-1 transition group">
+          <Link className="p-4 bg-slate-900 border border-slate-800 hover:border-cyan-500 rounded-2xl text-center space-y-1 transition group" href="/patient">
             <div className="text-2xl group-hover:scale-110 transition">👤</div>
             <div className="text-xs font-bold text-white">Patient Portal</div>
           </Link>
         </div>
       </section>
 
-      {/* 📈 REAL-TIME HEALTHCARE INTELLIGENCE CHART */}
+      {/* Operational Intelligence */}
       <section className="py-16 bg-slate-900/60 border-y border-slate-800">
         <div className="max-w-6xl mx-auto px-6 space-y-8">
           <div className="text-center space-y-2">
@@ -193,7 +188,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* 📢 2. INTERACTIVE AUTO-SLIDING ADS CAROUSEL WITH FEATURES */}
+      {/* Auto-sliding Ads Carousel */}
       <section className="py-16 max-w-6xl mx-auto px-6 space-y-6">
         <div className="flex items-center justify-between border-b border-slate-800 pb-3">
           <div>
@@ -218,7 +213,6 @@ export default function LandingPage() {
           </div>
         </div>
 
-        {/* Single Featured Slide Box */}
         <div className="bg-slate-900 border border-slate-800 p-8 rounded-3xl relative overflow-hidden transition-all duration-500">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-center">
             <div className="lg:col-span-2 space-y-4">
@@ -228,7 +222,6 @@ export default function LandingPage() {
               <h4 className="text-2xl font-black text-white">{adCards[currentAdIndex].title}</h4>
               <p className="text-xs text-slate-300 leading-relaxed">{adCards[currentAdIndex].desc}</p>
 
-              {/* Feature Bullets */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2">
                 {adCards[currentAdIndex].features.map((feat, fIdx) => (
                   <div key={fIdx} className="flex items-center gap-2 text-[11px] font-bold text-slate-400 bg-slate-950/60 p-2 rounded-xl border border-slate-800">
@@ -244,13 +237,11 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Visual Icon Illustration Card */}
             <div className="hidden lg:flex items-center justify-center bg-slate-950 border border-slate-800/80 rounded-2xl p-8 text-7xl shadow-inner">
               {adCards[currentAdIndex].icon}
             </div>
           </div>
 
-          {/* Carousel Dots Indicator */}
           <div className="flex justify-center gap-1.5 pt-6">
             {adCards.map((_, dotIdx) => (
               <button
@@ -286,13 +277,14 @@ export default function LandingPage() {
             ))}
           </div>
         </div>
+      </div>
       </section>
 
       {/* Footer */}
       <footer className="py-8 border-t border-slate-900 text-center text-xs text-slate-600">
-        © 2026 APT Smart-Health. Engineered by Alpha Proficiencies Technology (Engr. Jamilu Abubakar Sadiq).
+        © 2026 APT Smart-Health. Engineered by Alpha Proficiencies Technology.
       </footer>
     </main>
   );
-      }
-            
+              }
+                
