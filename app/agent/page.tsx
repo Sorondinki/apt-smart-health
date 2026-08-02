@@ -20,28 +20,20 @@ export default function AptAgentPortalPage() {
 
     if (!isLoggedIn) {
       alert('Authentication required: Sign in to access APT Agent Portal.');
-      router.push('/login');
+      router.push('/apt-login');
       return;
     }
 
     if (bannedUsers.includes(userEmail.toLowerCase())) {
       alert('Access Suspended: Your agent access has been revoked.');
       localStorage.removeItem('isLoggedIn');
-      router.push('/login');
+      router.push('/apt-login');
       return;
     }
 
     setAgentEmail(userEmail);
     setIsAuthenticated(true);
   }, [router]);
-
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-slate-950 text-slate-400 flex items-center justify-center text-xs font-bold">
-        Connecting to APT Headquarters Network...
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 font-sans flex flex-col">
@@ -62,7 +54,7 @@ export default function AptAgentPortalPage() {
           <button
             onClick={() => {
               localStorage.removeItem('isLoggedIn');
-              router.push('/login');
+              router.push('/apt-login');
             }}
             className="px-3 py-2 bg-red-600/20 text-red-400 hover:bg-red-600 hover:text-white text-xs font-bold rounded-xl border border-red-500/30 transition"
           >
