@@ -126,12 +126,12 @@ export default function SuperAdminConsolePage() {
 
     setCurrentAdminEmail(email);
 
-    // Strict clearance verification
-    if (!isLoggedIn || email.toLowerCase() !== SUPER_ADMIN_EMAIL.toLowerCase()) {
-      alert('Unauthorized Access: Super Admin credentials required.');
-      router.push('/login');
-      return;
-    }
+// Strict clearance verification (Cire binciken SUPER_ADMIN_EMAIL)
+if (!isLoggedIn || localStorage.getItem('isMasterAdmin') !== 'true') {
+  alert('Unauthorized Access: Master Password required.');
+  router.push('/login');
+  return;
+}
 
     // Load saved banned users list
     const savedBanned = JSON.parse(localStorage.getItem('apt_banned_users') || '[]');
