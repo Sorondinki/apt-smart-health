@@ -23,9 +23,45 @@ export default function SuperAdminConsolePage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentAdminEmail, setCurrentAdminEmail] = useState('');
 
-  // Form State for Registering New Entity
+  // -------------------------------------------------------------
+  // STATE 1: MANUAL SUBSCRIPTION & BANK APPROVALS
+  // -------------------------------------------------------------
+  const [targetEmail, setTargetEmail] = useState('');
+  const [selectedPlan, setSelectedPlan] = useState<'consultant' | 'basic' | 'pro' | 'enterprise'>('pro');
+  const [durationMonths, setDurationMonths] = useState<number>(1);
+  const [activeSubscriptions, setActiveSubscriptions] = useState<any[]>([]);
+
+  const [transferRequests, setTransferRequests] = useState<any[]>([
+    {
+      id: 'TR-1029',
+      facilityName: 'Ruhul Iman Specialist Hospital',
+      email: 'ruhuliman@gmail.com',
+      amount: 45000,
+      plan: 'Hospital Pro',
+      proofUrl: '#',
+      date: '2026-08-02',
+      status: 'pending',
+    },
+    {
+      id: 'TR-1028',
+      facilityName: 'Kano Clinic & Lab',
+      email: 'kanoclinic@yahoo.com',
+      amount: 25000,
+      plan: 'Clinic Basic',
+      proofUrl: '#',
+      date: '2026-08-01',
+      status: 'pending',
+    },
+  ]);
+
+  const pendingCount = transferRequests.filter((r) => r.status === 'pending').length;
+
+  // -------------------------------------------------------------
+  // STATE 2: ENTITY REGISTRATION & GOVERNANCE
+  // -------------------------------------------------------------
   const [newName, setNewName] = useState('');
   const [newEmail, setNewEmail] = useState('');
+  const [newPassword, setNewPassword] = useState(''); // An kara state din password anan
   const [newType, setNewType] = useState<EntityType>('Hospital');
   const [newPhone, setNewPhone] = useState('');
   const [newLocation, setNewLocation] = useState('');
@@ -35,7 +71,6 @@ export default function SuperAdminConsolePage() {
   const [bannedList, setBannedList] = useState<string[]>([]);
   const [filterType, setFilterType] = useState<string>('ALL');
 
-  // State for all registered entities
   const [accounts, setAccounts] = useState<RegisteredAccount[]>([
     {
       id: 'HOSP-001',
@@ -95,7 +130,7 @@ export default function SuperAdminConsolePage() {
   ]);
 
   // -------------------------------------------------------------
-  // SINGLE AUTH GUARD & INITIALIZATION
+  // INITIALIZATION & SINGLE AUTH GUARD
   // -------------------------------------------------------------
   useEffect(() => {
     const isMasterAuth = localStorage.getItem('isMasterAuthenticated');
@@ -103,17 +138,20 @@ export default function SuperAdminConsolePage() {
 
     setCurrentAdminEmail(email);
 
-    // Tabbatar da an bincika isMasterAuthenticated kacal!
     if (isMasterAuth !== 'true') {
       router.push('/admin/login');
       return;
     }
 
-    // Load saved banned users list
+    // Load Manual Subscriptions
+    const savedSubs = JSON.parse(localStorage.getItem('apt_manual_subscriptions') || '[]');
+    setActiveSubscriptions(savedSubs);
+
+    // Load Banned List
     const savedBanned = JSON.parse(localStorage.getItem('apt_banned_users') || '[]');
     setBannedList(savedBanned);
 
-    // Sync saved accounts if present in localStorage
+    // Sync Accounts
     const savedAccounts = localStorage.getItem('apt_registered_accounts');
     if (savedAccounts) {
       try {
@@ -132,26 +170,94 @@ export default function SuperAdminConsolePage() {
     localStorage.removeItem('userEmail');
     router.push('/admin/login');
   };
-  // -------------------------------------------------------------
 
-  // Helper to persist accounts array
   const persistAccounts = (updatedList: RegisteredAccount[]) => {
     setAccounts(updatedList);
     localStorage.setItem('apt_registered_accounts', JSON.stringify(updatedList));
   };
 
-  // Handle New Entity Registration
+  // -------------------------------------------------------------
+  // HANDLERS: MANUAL SUBSCRIPTION & BANK APPROVALS
+  // -------------------------------------------------------------
+  const handleManualSubscriptionTopUp = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!targetEmail.trim()) {
+      alert("Tabbatar ka shigar da Email din ma'aikata ko asibiti!");
+      return;
+    }
+
+    const startDate = new Date();
+    const expiryDate = new Date();
+    expiryDate.setMonth(expiryDate.getMonth() + Number(durationMonths));
+
+    const newSubRecord = {
+      id: 'SUB-' + Date.now(),
+      email: targetEmail.toLowerCase().trim(),
+      plan: selectedPlan,
+      durationMonths: Number(durationMonths),
+      startDate: startDate.toISOString().split('T')[0],
+      expiryDate: expiryDate.toISOString().split('T')[0],
+      status: 'Active',
+      activatedBy: 'Super Admin (Manual Direct Cash/Transfer)',
+    };
+
+    const updatedSubs = [
+      newSubRecord,
+      ...activeSubscriptions.filter((s) => s.email !== targetEmail.toLowerCase().trim()),
+    ];
+    setActiveSubscriptions(updatedSubs);
+    localStorage.setItem('apt_manual_subscriptions', JSON.stringify(updatedSubs));
+
+    localStorage.setItem(
+      `sub_status_${targetEmail.toLowerCase().trim()}`,
+      JSON.stringify({
+        isActive: true,
+        plan: selectedPlan,
+        expiryDate: expiryDate.toISOString().split('T')[0],
+      })
+    );
+
+    alert(
+      `✅ Subscription Top-Up Successful!\n\nEmail: ${targetEmail}\nPlan: ${selectedPlan.toUpperCase()}\nValid Until: ${expiryDate.toDateString()}`
+    );
+
+    setTargetEmail('');
+  };
+
+  const handleApproveTransfer = (req: any) => {
+    if (confirm(`Kana da tabbas kake son amincewa da biyan ₦${req.amount.toLocaleString()} na ${req.facilityName}?`)) {
+      setTransferRequests(transferRequests.map((r) => (r.id === req.id ? { ...r, status: 'approved' } : r)));
+      setTargetEmail(req.email);
+      alert(`✅ Request Approved! An shigar da email din (${req.email}) a cikin tsarin Manual Top-Up.`);
+    }
+  };
+
+  const handleRejectTransfer = (id: string) => {
+    if (confirm('Kana da tabbas kake son REJECT din wannan buƙatar biyan kuɗin?')) {
+      setTransferRequests(transferRequests.map((r) => (r.id === id ? { ...r, status: 'rejected' } : r)));
+    }
+  };
+
+  // -------------------------------------------------------------
+  // HANDLERS: ENTITY REGISTRATION & GOVERNANCE
+  // -------------------------------------------------------------
   const handleRegisterEntity = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newName.trim() || !newEmail.trim()) return;
+    if (!newName.trim() || !newEmail.trim() || !newPassword.trim()) {
+      alert('Tabbatar an cika suna, email da kuma password!');
+      return;
+    }
 
     const cleanEmail = newEmail.trim().toLowerCase();
 
-    // Check for duplicate registration
     if (accounts.some((acc) => acc.email.toLowerCase() === cleanEmail)) {
       alert('An account with this email address is already registered!');
       return;
     }
+
+    // Ajiyewa ko adana bayanin password a localstorage domin amfani dashi wajen Login nan gaba
+    localStorage.setItem(`user_pwd_${cleanEmail}`, newPassword);
 
     const prefix =
       newType === 'Hospital'
@@ -181,15 +287,14 @@ export default function SuperAdminConsolePage() {
 
     alert(`Successfully registered ${newAccount.name} (${newAccount.type})!`);
 
-    // Reset Form
     setNewName('');
     setNewEmail('');
+    setNewPassword(''); // Sanya shi koma babu komai bayan yin register
     setNewPhone('');
     setNewLocation('');
     setNewType('Hospital');
   };
 
-  // Block/Suspend Account Action
   const handleBlockUser = (emailToBlock: string) => {
     if (!emailToBlock) return;
     const cleanEmail = emailToBlock.trim().toLowerCase();
@@ -210,7 +315,6 @@ export default function SuperAdminConsolePage() {
     setBanInputEmail('');
   };
 
-  // Restore Access / Unblock
   const handleRestoreAccess = (emailToRestore: string) => {
     const cleanEmail = emailToRestore.trim().toLowerCase();
     const updatedBanned = bannedList.filter((e) => e !== cleanEmail);
@@ -225,7 +329,6 @@ export default function SuperAdminConsolePage() {
     alert(`Access restored for ${cleanEmail}.`);
   };
 
-  // Grant Subscription Access / Upgrade Plan
   const handleGrantAccess = (accountId: string) => {
     const updatedAccounts = accounts.map((acc) =>
       acc.id === accountId ? { ...acc, status: 'Active' as const, plan: 'Pro Monthly' as const } : acc
@@ -234,14 +337,12 @@ export default function SuperAdminConsolePage() {
     alert('Subscription status granted and activated!');
   };
 
-  // Delete Account Record Permanently
   const handleDeleteAccount = (accountId: string, email: string) => {
     if (!confirm(`Are you sure you want to permanently delete account: ${email}?`)) return;
 
     const updatedAccounts = accounts.filter((acc) => acc.id !== accountId);
     persistAccounts(updatedAccounts);
 
-    // Also remove from banned list if present
     const updatedBanned = bannedList.filter((e) => e !== email.toLowerCase());
     setBannedList(updatedBanned);
     localStorage.setItem('apt_banned_users', JSON.stringify(updatedBanned));
@@ -263,41 +364,43 @@ export default function SuperAdminConsolePage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans flex flex-col">
-      {/* Header */}
+    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans flex flex-col space-y-8 pb-12">
+        {/* ======================================================== */}
+      {/* HEADER SECTION                                           */}
+      {/* ======================================================== */}
       <header className="border-b border-purple-900/40 bg-slate-900/90 backdrop-blur-md sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-2">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-purple-600 flex items-center justify-center font-black text-white text-xl shadow-lg shadow-purple-600/30">
+            <div className="w-10 h-10 rounded-2xl bg-purple-600 flex items-center justify-center font-black text-white text-xl shadow-lg shadow-purple-600/30 shrink-0">
               👑
             </div>
-            <div>
-              <h1 className="font-extrabold text-sm sm:text-base text-white tracking-tight flex items-center gap-2">
+            <div className="min-w-0">
+              <h1 className="font-extrabold text-sm sm:text-base text-white tracking-tight flex items-center gap-2 truncate">
                 APT Super Admin Command Center
-                <span className="px-2 py-0.5 rounded-full text-[9px] bg-purple-500/20 text-purple-300 border border-purple-500/30 font-bold">
+                <span className="hidden sm:inline-block px-2 py-0.5 rounded-full text-[9px] bg-purple-500/20 text-purple-300 border border-purple-500/30 font-bold">
                   FULL ACCESS
                 </span>
               </h1>
-              <p className="text-[10px] text-slate-400">Managing Director: {currentAdminEmail}</p>
+              <p className="text-[10px] text-slate-400 truncate">Managing Director: {currentAdminEmail}</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             <Link
               href="/md-office/"
-              className="px-3.5 py-2 bg-amber-500/20 hover:bg-amber-500 hover:text-slate-950 text-amber-300 text-xs font-bold rounded-xl border border-amber-500/30 transition"
+              className="px-2.5 sm:px-3.5 py-2 bg-amber-500/20 hover:bg-amber-500 hover:text-slate-950 text-amber-300 text-[11px] sm:text-xs font-bold rounded-xl border border-amber-500/30 transition"
             >
               👑 MD Office →
             </Link>
             <Link
               href="/dashboard/"
-              className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-700 transition"
+              className="hidden md:inline-block px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-700 transition"
             >
               Hospital Portal →
             </Link>
             <button
               onClick={handleLogout}
-              className="px-3 py-2 bg-red-600/20 text-red-400 hover:bg-red-600 hover:text-white text-xs font-bold rounded-xl border border-red-500/30 transition"
+              className="px-2.5 sm:px-3 py-2 bg-red-600/20 text-red-400 hover:bg-red-600 hover:text-white text-[11px] sm:text-xs font-bold rounded-xl border border-red-500/30 transition"
             >
               Sign Out
             </button>
@@ -305,48 +408,238 @@ export default function SuperAdminConsolePage() {
         </div>
       </header>
 
-      {/* Main Console Layout */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-8">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 space-y-8">
         
-        {/* Metric Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        {/* METRICS DASHBOARD CARDS */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
           <div className="bg-slate-900/80 border border-purple-500/20 rounded-2xl p-4 shadow-xl">
             <p className="text-[10px] font-bold text-slate-400 uppercase">Hospitals & Clinics</p>
-            <h2 className="text-2xl font-black text-white mt-1">
+            <h2 className="text-xl sm:text-2xl font-black text-white mt-1">
               {accounts.filter((a) => a.type === 'Hospital' || a.type === 'Clinic').length}
             </h2>
           </div>
 
           <div className="bg-slate-900/80 border border-purple-500/20 rounded-2xl p-4 shadow-xl">
             <p className="text-[10px] font-bold text-slate-400 uppercase">Private Consultants</p>
-            <h2 className="text-2xl font-black text-sky-400 mt-1">
+            <h2 className="text-xl sm:text-2xl font-black text-sky-400 mt-1">
               {accounts.filter((a) => a.type === 'Private Consultant').length}
             </h2>
           </div>
 
           <div className="bg-slate-900/80 border border-purple-500/20 rounded-2xl p-4 shadow-xl">
             <p className="text-[10px] font-bold text-slate-400 uppercase">MD Staff Office</p>
-            <h2 className="text-2xl font-black text-amber-400 mt-1">
+            <h2 className="text-xl sm:text-2xl font-black text-amber-400 mt-1">
               {accounts.filter((a) => a.type === 'MD Staff').length}
             </h2>
           </div>
 
           <div className="bg-slate-900/80 border border-purple-500/20 rounded-2xl p-4 shadow-xl">
-            <p className="text-[10px] font-bold text-slate-400 uppercase">APT Official Field Agents</p>
-            <h2 className="text-2xl font-black text-purple-400 mt-1">
+            <p className="text-[10px] font-bold text-slate-400 uppercase">APT Field Agents</p>
+            <h2 className="text-xl sm:text-2xl font-black text-purple-400 mt-1">
               {accounts.filter((a) => a.type === 'APT Field Agent').length}
             </h2>
           </div>
 
-          <div className="bg-slate-900/80 border border-purple-500/20 rounded-2xl p-4 shadow-xl">
+          <div className="col-span-2 sm:col-span-1 bg-slate-900/80 border border-purple-500/20 rounded-2xl p-4 shadow-xl">
             <p className="text-[10px] font-bold text-slate-400 uppercase">Suspended / Banned</p>
-            <h2 className="text-2xl font-black text-red-400 mt-1">{bannedList.length}</h2>
+            <h2 className="text-xl sm:text-2xl font-black text-red-400 mt-1">{bannedList.length}</h2>
           </div>
         </div>
 
-        {/* Form: Register New Entity */}
-        <div className="bg-slate-900/90 border border-purple-500/30 rounded-3xl p-6 shadow-2xl space-y-4">
-          <div className="flex items-center gap-2 border-b border-slate-800 pb-3">
+        {/* ======================================================== */}
+        {/* SECTION 1: INCOMING BANK TRANSFER APPROVALS              */}
+        {/* ======================================================== */}
+        <div className="bg-slate-900 border border-amber-500/30 rounded-3xl p-4 sm:p-6 shadow-2xl space-y-6">
+          <div className="border-b border-slate-800 pb-4 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-amber-500/10 border border-amber-500/30 text-amber-400 rounded-xl flex items-center justify-center font-black text-xl shrink-0">
+                🏦
+              </div>
+              <div>
+                <h3 className="text-base font-black text-white">Incoming Bank Transfer Approvals</h3>
+                <p className="text-xs text-slate-400">Tabbatar da sanarwar biyan kudi ta Bank Transfer daga asibitoci.</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 bg-slate-950 border border-slate-800 px-3 py-1.5 rounded-2xl">
+              <span className="relative flex h-2.5 w-2.5">
+                {pendingCount > 0 && (
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                )}
+                <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${pendingCount > 0 ? 'bg-amber-500' : 'bg-slate-600'}`}></span>
+              </span>
+              <span className="text-[10px] font-bold text-slate-300">
+                Pending: <strong className="text-amber-400">{pendingCount}</strong>
+              </span>
+            </div>
+          </div>
+
+          {transferRequests.filter((r) => r.status === 'pending').length === 0 ? (
+            <p className="text-xs text-slate-500 italic py-4 text-center">Babu wata buƙatar Bank Transfer da ke jiran amincewa a yanzu.</p>
+          ) : (
+            <div className="space-y-3">
+              {transferRequests
+                .filter((r) => r.status === 'pending')
+                .map((req) => (
+                  <div
+                    key={req.id}
+                    className="bg-slate-950 border border-slate-800 p-4 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 hover:border-slate-700 transition"
+                  >
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-black text-white">{req.facilityName}</span>
+                        <span className="text-[10px] bg-cyan-900/50 text-cyan-300 px-2 py-0.5 rounded font-mono">{req.plan}</span>
+                      </div>
+                      <p className="text-xs text-slate-400 font-mono">{req.email}</p>
+                      <p className="text-xs font-bold text-emerald-400">
+                        Amount: ₦{req.amount.toLocaleString()} <span className="text-slate-500 font-normal">({req.date})</span>
+                      </p>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2 pt-2 md:pt-0 border-t md:border-t-0 border-slate-800">
+                      <a
+                        href={req.proofUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl transition flex items-center gap-1"
+                      >
+                        🖼️ Proof
+                      </a>
+                      <button
+                        onClick={() => handleApproveTransfer(req)}
+                        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black rounded-xl shadow-lg transition flex-1 sm:flex-none"
+                      >
+                        ✓ Approve
+                      </button>
+                      <button
+                        onClick={() => handleRejectTransfer(req.id)}
+                        className="px-4 py-2 bg-rose-600/20 hover:bg-rose-600 text-rose-300 hover:text-white text-xs font-bold rounded-xl transition flex-1 sm:flex-none"
+                      >
+                        ✕ Reject
+                      </button>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          )}
+        </div>
+
+        {/* ======================================================== */}
+        {/* SECTION 2: MANUAL SUBSCRIPTION TOP-UP & EXTENSION CARD  */}
+        {/* ======================================================== */}
+        <div className="bg-slate-900 border border-cyan-500/30 rounded-3xl p-4 sm:p-6 shadow-2xl space-y-6">
+          <div className="border-b border-slate-800 pb-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 rounded-xl flex items-center justify-center font-black text-xl shrink-0">
+                💳
+              </div>
+              <div>
+                <h3 className="text-base font-black text-white">Manual Subscription Top-Up & Extension</h3>
+                <p className="text-xs text-slate-400">
+                  Yiwa asibiti ko likita Top-Up na wata 1, wata 6, ko shekara 1 idan ya biya kudi a hannu (Cash/Direct Bank Transfer).
+                </p>
+              </div>
+            </div>
+            <span className="hidden sm:inline-block px-3 py-1 bg-cyan-500/10 text-cyan-400 text-[10px] font-bold rounded-full border border-cyan-500/20">
+              Direct Billing Control
+            </span>
+          </div>
+
+          <form onSubmit={handleManualSubscriptionTopUp} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-xs font-bold uppercase text-slate-400 mb-1">Target Account Email *</label>
+                <input
+                  type="email"
+                  required
+                  value={targetEmail}
+                  onChange={(e) => setTargetEmail(e.target.value)}
+                  placeholder="e.g. admin@kanospecialist.com"
+                  className="w-full px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white outline-none focus:border-cyan-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase text-slate-400 mb-1">Choose Subscription Tier *</label>
+                <select
+                  value={selectedPlan}
+                  onChange={(e: any) => setSelectedPlan(e.target.value)}
+                  className="w-full px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white outline-none focus:border-cyan-500 cursor-pointer"
+                >
+                  <option value="consultant">Tier 1: Private Consultant (₦15,000/mo)</option>
+                  <option value="basic">Tier 2: Clinic Basic (₦25,000/mo)</option>
+                  <option value="pro">Tier 3: Hospital Pro (₦45,000/mo)</option>
+                  <option value="enterprise">Tier 4: Enterprise Network (₦120,000/mo)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase text-slate-400 mb-1">Subscription Duration *</label>
+                <select
+                  value={durationMonths}
+                  onChange={(e) => setDurationMonths(Number(e.target.value))}
+                  className="w-full px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white outline-none focus:border-cyan-500 cursor-pointer"
+                >
+                  <option value={1}>1 Month (Standard)</option>
+                  <option value={3}>3 Months (Quarterly)</option>
+                  <option value={6}>6 Months (Bi-Annual - Discounted)</option>
+                  <option value={12}>12 Months / 1 Year (Annual Plan)</option>
+                </select>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              className="w-full sm:w-auto px-6 py-3 bg-cyan-600 hover:bg-cyan-500 text-white font-black text-xs rounded-xl shadow-lg transition flex items-center justify-center gap-2"
+            >
+              <span>⚡ Apply Manual Top-Up / Extend Expiry</span>
+            </button>
+          </form>
+
+          {/* ACTIVE MANUAL SUBSCRIPTIONS LOG TABLE */}
+          <div className="pt-4 border-t border-slate-800 space-y-3">
+            <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider">Active Manual Subscription Records</h4>
+
+            {activeSubscriptions.length === 0 ? (
+              <p className="text-xs text-slate-500 italic">No manual subscription top-ups performed yet.</p>
+            ) : (
+              <div className="overflow-x-auto rounded-2xl border border-slate-800">
+                <table className="w-full text-left text-xs text-slate-300 min-w-[600px]">
+                  <thead className="bg-slate-950 text-slate-400 uppercase text-[10px]">
+                    <tr>
+                      <th className="p-3">User/Facility Email</th>
+                      <th className="p-3">Plan Tier</th>
+                      <th className="p-3">Duration</th>
+                      <th className="p-3">Activated Date</th>
+                      <th className="p-3">Expiry Date</th>
+                      <th className="p-3">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800 bg-slate-900/50">
+                    {activeSubscriptions.map((sub) => (
+                      <tr key={sub.id} className="hover:bg-slate-950/50 transition">
+                        <td className="p-3 font-mono font-bold text-white">{sub.email}</td>
+                        <td className="p-3 uppercase text-cyan-400 font-bold">{sub.plan}</td>
+                        <td className="p-3">{sub.durationMonths} Month(s)</td>
+                        <td className="p-3 text-slate-400">{sub.startDate}</td>
+                        <td className="p-3 font-mono text-emerald-400 font-bold">{sub.expiryDate}</td>
+                        <td className="p-3">
+                          <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 text-[10px] font-black rounded border border-emerald-500/30">
+                            {sub.status} ✓
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+           {/* ======================================================== */}
+        {/* SECTION 3: ENTITY REGISTRATION FORM                     */}
+        {/* ======================================================== */}
+        <div className="bg-slate-900/90 border border-purple-500/30 rounded-3xl p-4 sm:p-6 shadow-2xl space-y-4">
+          <div className="flex items-center gap-3 border-b border-slate-800 pb-3">
             <span className="text-xl">➕</span>
             <div>
               <h3 className="text-sm font-extrabold text-white">
@@ -379,6 +672,19 @@ export default function SuperAdminConsolePage() {
                 value={newEmail}
                 onChange={(e) => setNewEmail(e.target.value)}
                 placeholder="official@domain.com"
+                className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white outline-none focus:border-purple-500"
+              />
+            </div>
+
+            {/* AN KARA WANNAN PASSWORD FIELD ANAN */}
+            <div>
+              <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Account Password *</label>
+              <input
+                type="password"
+                required
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="••••••••"
                 className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white outline-none focus:border-purple-500"
               />
             </div>
@@ -438,7 +744,7 @@ export default function SuperAdminConsolePage() {
             <div className="md:col-span-3 flex justify-end pt-2">
               <button
                 type="submit"
-                className="px-6 py-3 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs rounded-xl shadow-lg transition"
+                className="w-full sm:w-auto px-6 py-3 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs rounded-xl shadow-lg transition"
               >
                 Register & Grant Access →
               </button>
@@ -446,9 +752,11 @@ export default function SuperAdminConsolePage() {
           </form>
         </div>
 
-        {/* Quick Ban / Revoke Tool */}
-        <div className="bg-slate-900/90 border border-red-500/30 rounded-3xl p-6 shadow-2xl space-y-4">
-          <div className="flex items-center gap-2">
+        {/* ======================================================== */}
+        {/* SECTION 4: ACCOUNT BAN & REVOCATION TOOL                */}
+        {/* ======================================================== */}
+        <div className="bg-slate-900/90 border border-red-500/30 rounded-3xl p-4 sm:p-6 shadow-2xl space-y-4">
+          <div className="flex items-center gap-3">
             <span className="text-xl">🛡️</span>
             <div>
               <h3 className="text-sm font-extrabold text-white">
@@ -465,7 +773,7 @@ export default function SuperAdminConsolePage() {
               e.preventDefault();
               handleBlockUser(banInputEmail);
             }}
-            className="flex gap-3 max-w-md"
+            className="flex flex-col sm:flex-row gap-3 max-w-md"
           >
             <input
               type="email"
@@ -483,7 +791,6 @@ export default function SuperAdminConsolePage() {
             </button>
           </form>
 
-          {/* List of Blocked Emails */}
           {bannedList.length > 0 && (
             <div className="pt-2 border-t border-slate-800">
               <h4 className="text-[10px] font-bold text-red-400 uppercase mb-2">Currently Suspended Accounts:</h4>
@@ -508,8 +815,10 @@ export default function SuperAdminConsolePage() {
           )}
         </div>
 
-        {/* Master Accounts Table */}
-        <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 shadow-xl space-y-4">
+        {/* ======================================================== */}
+        {/* SECTION 5: MASTER ACCOUNTS DIRECTORY TABLE               */}
+        {/* ======================================================== */}
+        <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-4 sm:p-6 shadow-xl space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h3 className="text-sm font-extrabold text-white tracking-wide">
@@ -520,7 +829,6 @@ export default function SuperAdminConsolePage() {
               </p>
             </div>
 
-            {/* Category Filter */}
             <div className="flex items-center gap-2">
               <span className="text-xs text-slate-400 font-bold">Filter:</span>
               <select
@@ -538,20 +846,20 @@ export default function SuperAdminConsolePage() {
             </div>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs text-slate-300">
+          <div className="overflow-x-auto rounded-2xl border border-slate-800/80">
+            <table className="w-full text-left text-xs text-slate-300 min-w-[750px]">
               <thead className="bg-slate-950 text-slate-400 uppercase text-[10px] font-bold tracking-wider">
                 <tr>
-                  <th className="p-3.5 rounded-l-xl">ID / Account Name</th>
+                  <th className="p-3.5">ID / Account Name</th>
                   <th className="p-3.5">Category</th>
                   <th className="p-3.5">Contact & Location</th>
                   <th className="p-3.5">Reg Date</th>
                   <th className="p-3.5">Plan</th>
                   <th className="p-3.5">Status</th>
-                  <th className="p-3.5 text-right rounded-r-xl">Actions & Governance</th>
+                  <th className="p-3.5 text-right">Actions & Governance</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60">
+              <tbody className="divide-y divide-slate-800/60 bg-slate-900/40">
                 {filteredAccounts.map((acc) => (
                   <tr key={acc.id} className="hover:bg-slate-800/40 transition">
                     <td className="p-3.5 font-bold text-white">
@@ -641,4 +949,4 @@ export default function SuperAdminConsolePage() {
       </main>
     </div>
   );
-                    }
+                }
