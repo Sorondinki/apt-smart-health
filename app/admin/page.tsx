@@ -23,33 +23,19 @@ export default function SuperAdminConsolePage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentAdminEmail, setCurrentAdminEmail] = useState('');
 
-  // -------------------------------------------------------------
-  // AUTH GUARD & LOGOUT FUNCTION (NAN ZAKA SAKA SU)
-  // -------------------------------------------------------------
-  useEffect(() => {
-    const isMasterAuth = localStorage.getItem('isMasterAuthenticated');
-    const email = localStorage.getItem('userEmail') || 'sorondinkiseeme@gmail.com';
+  // Form State for Registering New Entity
+  const [newName, setNewName] = useState('');
+  const [newEmail, setNewEmail] = useState('');
+  const [newType, setNewType] = useState<EntityType>('Hospital');
+  const [newPhone, setNewPhone] = useState('');
+  const [newLocation, setNewLocation] = useState('');
+  const [newPlan, setNewPlan] = useState<'Free Trial' | 'Pro Monthly' | 'Enterprise' | 'Official Internal'>('Pro Monthly');
 
-    setCurrentAdminEmail(email);
+  const [banInputEmail, setBanInputEmail] = useState('');
+  const [bannedList, setBannedList] = useState<string[]>([]);
+  const [filterType, setFilterType] = useState<string>('ALL');
 
-    // Duba ko an shiga ta Master Access Passcode
-    if (isMasterAuth !== 'true') {
-      router.push('/login');
-      return;
-    }
-
-    setIsAuthenticated(true);
-  }, [router]);
-
-  const handleLogout = () => {
-    localStorage.removeItem('isMasterAuthenticated');
-    localStorage.removeItem('isLoggedIn');
-    localStorage.removeItem('userEmail');
-    router.push('/login');
-  };
-  // -------------------------------------------------------------
-
-  // State for all registered entities (Hospitals, Clinics, Consultants, Staff & Agents)
+  // State for all registered entities
   const [accounts, setAccounts] = useState<RegisteredAccount[]>([
     {
       id: 'HOSP-001',
@@ -108,30 +94,20 @@ export default function SuperAdminConsolePage() {
     },
   ]);
 
-  // Form State for Registering New Entity
-  const [newName, setNewName] = useState('');
-  const [newEmail, setNewEmail] = useState('');
-  const [newType, setNewType] = useState<EntityType>('Hospital');
-  const [newPhone, setNewPhone] = useState('');
-  const [newLocation, setNewLocation] = useState('');
-  const [newPlan, setNewPlan] = useState<'Free Trial' | 'Pro Monthly' | 'Enterprise' | 'Official Internal'>('Pro Monthly');
-
-  const [banInputEmail, setBanInputEmail] = useState('');
-  const [bannedList, setBannedList] = useState<string[]>([]);
-  const [filterType, setFilterType] = useState<string>('ALL');
-
+  // -------------------------------------------------------------
+  // SINGLE AUTH GUARD & INITIALIZATION
+  // -------------------------------------------------------------
   useEffect(() => {
-    const isLoggedIn = localStorage.getItem('isLoggedIn');
-    const email = localStorage.getItem('userEmail') || '';
+    const isMasterAuth = localStorage.getItem('isMasterAuthenticated');
+    const email = localStorage.getItem('userEmail') || 'sorondinkiseeme@gmail.com';
 
     setCurrentAdminEmail(email);
 
-// Strict clearance verification (Cire binciken SUPER_ADMIN_EMAIL)
-if (!isLoggedIn || localStorage.getItem('isMasterAdmin') !== 'true') {
-  alert('Unauthorized Access: Master Password required.');
-  router.push('/login');
-  return;
-}
+    // Tabbatar da an bincika isMasterAuthenticated kacal!
+    if (isMasterAuth !== 'true') {
+      router.push('/admin/login');
+      return;
+    }
 
     // Load saved banned users list
     const savedBanned = JSON.parse(localStorage.getItem('apt_banned_users') || '[]');
@@ -149,6 +125,14 @@ if (!isLoggedIn || localStorage.getItem('isMasterAdmin') !== 'true') {
 
     setIsAuthenticated(true);
   }, [router]);
+
+  const handleLogout = () => {
+    localStorage.removeItem('isMasterAuthenticated');
+    localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('userEmail');
+    router.push('/admin/login');
+  };
+  // -------------------------------------------------------------
 
   // Helper to persist accounts array
   const persistAccounts = (updatedList: RegisteredAccount[]) => {
@@ -312,10 +296,7 @@ if (!isLoggedIn || localStorage.getItem('isMasterAdmin') !== 'true') {
               Hospital Portal →
             </Link>
             <button
-              onClick={() => {
-                localStorage.removeItem('isLoggedIn');
-                router.push('/login');
-              }}
+              onClick={handleLogout}
               className="px-3 py-2 bg-red-600/20 text-red-400 hover:bg-red-600 hover:text-white text-xs font-bold rounded-xl border border-red-500/30 transition"
             >
               Sign Out
@@ -363,7 +344,7 @@ if (!isLoggedIn || localStorage.getItem('isMasterAdmin') !== 'true') {
           </div>
         </div>
 
-        {/* Form: Register New Entity / Staff / Consultant / Agent */}
+        {/* Form: Register New Entity */}
         <div className="bg-slate-900/90 border border-purple-500/30 rounded-3xl p-6 shadow-2xl space-y-4">
           <div className="flex items-center gap-2 border-b border-slate-800 pb-3">
             <span className="text-xl">➕</span>
@@ -523,7 +504,7 @@ if (!isLoggedIn || localStorage.getItem('isMasterAdmin') !== 'true') {
                   </div>
                 ))}
               </div>
-          </div>
+            </div>
           )}
         </div>
 
@@ -660,4 +641,4 @@ if (!isLoggedIn || localStorage.getItem('isMasterAdmin') !== 'true') {
       </main>
     </div>
   );
-}
+                    }
