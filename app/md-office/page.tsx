@@ -56,14 +56,14 @@ export default function ManagingDirectorOfficePage() {
 
     if (!isLoggedIn) {
       alert('Security Alert: Authentication required to enter MD Executive Office.');
-      router.push('/login');
+      router.push('/apt-login');
       return;
     }
 
     if (bannedUsers.includes(userEmail.toLowerCase())) {
       alert('Access Denied: Your credentials have been revoked.');
       localStorage.removeItem('isLoggedIn');
-      router.push('/login');
+      router.push('/apt-login');
       return;
     }
 
@@ -80,7 +80,7 @@ export default function ManagingDirectorOfficePage() {
 
   const handleLogout = () => {
     localStorage.removeItem('isLoggedIn');
-    router.push('/login');
+    router.push('/apt-login');
   };
 
   const startIndividualCall = (entity: HospitalEntity | AgentEntity) => {
@@ -325,5 +325,5 @@ export default function ManagingDirectorOfficePage() {
       </main>
     </div>
   );
-                            }
-            
+  }
+          
