@@ -4,7 +4,8 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 
 export default function SubscriptionPage() {
-  const [loading, setLoading] = useState(false);
+  // Gyara nan: maimakon boolean, zamu adana key din plan din da ake loading
+  const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [selectedPlan, setSelectedPlan] = useState<'consultant' | 'basic' | 'pro' | 'enterprise'>('pro');
   const [email, setEmail] = useState('');
 
@@ -67,7 +68,8 @@ export default function SubscriptionPage() {
       return;
     }
 
-    setLoading(true);
+    // Saka takamaiman plan ɗin da aka danna a cikin loading state
+    setLoadingPlan(planKey);
 
     const plan = plans[planKey];
     const publicKey =
@@ -102,7 +104,7 @@ export default function SubscriptionPage() {
             });
             const result = await res.json();
 
-            setLoading(false);
+            setLoadingPlan(null);
             if (result.success) {
               alert('Biyan kudi ya kammala tsaf! Ref: ' + response.reference);
               localStorage.setItem('subscription_active', 'active');
@@ -111,12 +113,12 @@ export default function SubscriptionPage() {
               alert('An samu matsala wajen tabbatar da biyan kudin.');
             }
           } catch (e) {
-            setLoading(false);
+            setLoadingPlan(null);
             alert('Biyan kudi ya wuce amman ana bukatar Tabbatarwa.');
           }
         },
         onClose: function () {
-          setLoading(false);
+          setLoadingPlan(null);
           alert('An soke biyan kudin.');
         },
       });
@@ -178,6 +180,7 @@ export default function SubscriptionPage() {
           {(Object.keys(plans) as Array<keyof typeof plans>).map((key) => {
             const plan = plans[key];
             const isSelected = selectedPlan === key;
+            const isThisPlanLoading = loadingPlan === key;
 
             return (
               <div
@@ -219,14 +222,16 @@ export default function SubscriptionPage() {
                     setSelectedPlan(key);
                     handlePaystackPayment(key);
                   }}
-                  disabled={loading}
+                  disabled={loadingPlan !== null}
                   className={`w-full py-3.5 rounded-2xl font-bold text-xs transition shadow-lg ${
                     isSelected
                       ? 'bg-cyan-600 hover:bg-cyan-500 text-white shadow-cyan-600/20'
                       : 'bg-slate-800 hover:bg-slate-700 text-slate-200'
-                  }`}
+                  } disabled:opacity-50`}
                 >
-                  {loading ? 'Processing Paystack...' : `Pay Now (₦${plan.price.toLocaleString()})`}
+                  {isThisPlanLoading
+                    ? 'Processing Paystack...'
+                    : `Pay Now (₦${plan.price.toLocaleString()})`}
                 </button>
               </div>
             );
@@ -239,4 +244,5 @@ export default function SubscriptionPage() {
       </div>
     </div>
   );
-              }
+        }
+        
