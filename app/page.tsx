@@ -12,7 +12,7 @@ export default function LandingPage() {
       id: 1,
       tag: 'DIAGNOSTICS & IMAGING',
       title: 'Kano Modern Diagnostic & MRI Center',
-      desc: 'Sami rangwamen 20% akan dukkan gwajin CT-Scan, MRI, da Ultra-sound ga duk marasa lafiya dake amfani da APT Smart-Health Network.',
+      desc: 'Enjoy a 20% discount on all CT-Scan, MRI, and Ultrasound tests for patients utilizing the APT Smart-Health Network.',
       features: ['24/7 Fast Result Delivery', '100% Digital Scan Transfer', 'Specialist Doctor Verification'],
       icon: '🔬',
       badgeColor: 'border-cyan-500/30 text-cyan-400 bg-cyan-500/10',
@@ -22,7 +22,7 @@ export default function LandingPage() {
       id: 2,
       tag: 'PHARMACEUTICAL SUPPLIES',
       title: 'Pharmaplus Bulk Medicine Distributor',
-      desc: 'Sayen magunguna na asali da kayan aikin asibiti wholesale kai tsaye daga kamfanin masana’anta tare da rangwame mai yawa.',
+      desc: 'Source original bulk pharmaceutical supplies and essential hospital consumables directly from certified manufacturers.',
       features: ['NAFDAC Certified Products', 'Cold-Chain Delivery System', 'Flexible Payment Terms'],
       icon: '💊',
       badgeColor: 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10',
@@ -32,7 +32,7 @@ export default function LandingPage() {
       id: 3,
       tag: 'HEALTH INSURANCE & HMO',
       title: 'Northern Care HMO Coverage',
-      desc: 'Inshorar lafiya mai sauki ga iyalai da ma\'aikatan kamfanoni tare da daukar nauyin magani a asibitoci daban-daban.',
+      desc: 'Affordable health insurance plans for families and corporate organizations with seamless coverage across network hospitals.',
       features: ['Zero Cash Outpatient Triage', 'Maternity & Child Care', 'Instant Code Generation'],
       icon: '🛡️',
       badgeColor: 'border-amber-500/30 text-amber-400 bg-amber-500/10',
@@ -49,13 +49,13 @@ export default function LandingPage() {
 
   const reviews = [
     {
-      quote: "APT Smart-Health ya sauya yadda muke gudanar da marasa lafiya a asibitinmu. Yanzu komai yana tafiya cikin takaitaccen lokaci.",
+      quote: "APT Smart-Health has completely transformed how we manage patient workflows in our hospital. Operations are now exceptionally fast and accurate.",
       author: "Dr. Kabir Usman",
       title: "Chief Medical Director, Kano Specialist Hospital",
       avatar: "👨‍⚕️"
     },
     {
-      quote: "Tsarin Telemedicine da E-Prescription dake ciki yana bamu damar duba marasa lafiya daga nesa cikin sauki da tsaro.",
+      quote: "The Telemedicine and E-Prescription functionality allows us to conduct remote patient consultations with complete security and reliability.",
       author: "Dr. Amina Aliyu",
       title: "Consultant Gynecologist, City Care Clinic",
       avatar: "👩‍⚕️"
@@ -78,11 +78,15 @@ export default function LandingPage() {
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Direct Link to Subscription Page */}
+            <Link className="text-xs text-slate-300 hover:text-cyan-400 font-bold px-3 py-2 transition flex items-center gap-1" href="/subscribe">
+              <span>💳</span> Pricing & Subscription
+            </Link>
             <Link className="text-xs text-slate-300 hover:text-white font-bold px-3 py-2" href="/login">
               Sign In
             </Link>
-            <Link className="px-4 py-2 bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-black rounded-xl transition" href="/register">
-              Register Facility
+            <Link className="px-4 py-2 bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-black rounded-xl transition shadow-lg shadow-cyan-500/20" href="/subscribe">
+              Subscribe Facility
             </Link>
           </div>
         </div>
@@ -99,8 +103,8 @@ export default function LandingPage() {
               🌟 <span className="text-cyan-400">Kano Diagnostic Center:</span> Get Free Blood Sugar & BP Triage on all clinic visits this week!
             </p>
           </div>
-          <Link className="text-[11px] font-black text-cyan-400 hover:text-cyan-300 border border-cyan-500/30 px-3 py-1 rounded-lg bg-cyan-500/10 transition" href="/contact">
-            Saka Naka Babban Talla A Nan →
+          <Link className="text-[11px] font-black text-cyan-400 hover:text-cyan-300 border border-cyan-500/30 px-3 py-1 rounded-lg bg-cyan-500/10 transition" href="/advertise">
+            Place Your Featured Ad Here →
           </Link>
         </div>
       </div>
@@ -116,6 +120,16 @@ export default function LandingPage() {
         <p className="text-slate-400 text-sm max-w-2xl mx-auto">
           Integrated EHR, Outpatient Triage, Telemedicine Video Consultations, and Financial Telemetry—built for modern medical care delivery.
         </p>
+
+        {/* Action Buttons & Portal Links */}
+        <div className="pt-2 flex items-center justify-center gap-4">
+          <Link
+            href="/subscribe"
+            className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-black text-xs rounded-2xl shadow-xl transition transform hover:scale-105 flex items-center gap-2"
+          >
+            <span>💎 Choose Subscription Plan</span>
+          </Link>
+        </div>
 
         {/* Dynamic Navigation Portals */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4 max-w-3xl mx-auto">
@@ -143,7 +157,7 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto px-6 space-y-8">
           <div className="text-center space-y-2">
             <span className="text-xs font-bold text-cyan-400 uppercase tracking-widest">📉📈 Operational Intelligence</span>
-            <h2 className="text-2xl sm:text-3xl font-black text-white">Jajircewa da Kula da Lafiyar Al'umma</h2>
+            <h2 className="text-2xl sm:text-3xl font-black text-white">Commitment to Community Health & Recovery</h2>
           </div>
 
           <div className="bg-slate-950 border border-slate-800 rounded-3xl p-6 space-y-6">
@@ -195,7 +209,7 @@ export default function LandingPage() {
             <span className="text-[10px] font-bold text-amber-400 uppercase tracking-widest bg-amber-500/10 px-2.5 py-1 rounded border border-amber-500/20">
               📢 Sponsored Healthcare Spotlights
             </span>
-            <h3 className="text-xl font-black text-white mt-2">Abokan Hulɗa da Tallan Kayan Lafiya</h3>
+            <h3 className="text-xl font-black text-white mt-2">Verified Medical Partners & Products</h3>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -259,7 +273,7 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto px-6 space-y-8">
           <div className="text-center space-y-2">
             <span className="text-xs font-bold text-emerald-400 uppercase tracking-widest">💬 Testimonials</span>
-            <h2 className="text-2xl font-black text-white">Shaidar Kwararrun Likitoci</h2>
+            <h2 className="text-2xl font-black text-white">Endorsements from Medical Experts</h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -285,5 +299,5 @@ export default function LandingPage() {
       </footer>
     </main>
   );
-      }
-        
+        }
+                
