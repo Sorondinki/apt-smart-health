@@ -63,7 +63,7 @@ export default function HospitalDashboardPage() {
     setUserRole(role);
 
     if (!isLoggedIn) {
-      router.push('/apt-login');
+      router.push('/login');
       return;
     }
 
