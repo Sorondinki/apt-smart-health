@@ -79,14 +79,14 @@ export default function LandingPage() {
 
           <div className="flex items-center gap-3">
             {/* Direct Link to Subscription Page */}
-            <Link className="text-xs text-slate-300 hover:text-cyan-400 font-bold px-3 py-2 transition flex items-center gap-1" href="/subscribe">
+            <Link className="text-xs text-slate-300 hover:text-cyan-400 font-bold px-3 py-2 transition flex items-center gap-1" href="/subscription">
               <span>💳</span> Pricing & Subscription
             </Link>
             <Link className="text-xs text-slate-300 hover:text-white font-bold px-3 py-2" href="/login">
               Sign In
             </Link>
-            <Link className="px-4 py-2 bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-black rounded-xl transition shadow-lg shadow-cyan-500/20" href="/subscribe">
-              Subscribe Facility
+            <Link className="px-4 py-2 bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-black rounded-xl transition shadow-lg shadow-cyan-500/20" href="/register">
+              Register Facility
             </Link>
           </div>
         </div>
@@ -124,7 +124,7 @@ export default function LandingPage() {
         {/* Action Buttons & Portal Links */}
         <div className="pt-2 flex items-center justify-center gap-4">
           <Link
-            href="/subscribe"
+            href="/subscription"
             className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-black text-xs rounded-2xl shadow-xl transition transform hover:scale-105 flex items-center gap-2"
           >
             <span>💎 Choose Subscription Plan</span>
