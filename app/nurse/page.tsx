@@ -72,7 +72,7 @@ export default function NursingStationPage() {
 
     if (!isLoggedIn) {
       alert('Authentication required: Please login to enter Nursing Station.');
-      router.push('/apt-login');
+      router.push('/login');
       return;
     }
 
