@@ -9,6 +9,7 @@ interface StaffMember {
   name: string;
   role: 'DOCTOR' | 'NURSE' | 'LAB_TECH' | 'RECEPTIONIST' | 'PHARMACIST';
   department: string;
+  email: string;
   dutyStatus: 'ON_DUTY' | 'OFF_DUTY' | 'ON_LEAVE';
 }
 
@@ -31,17 +32,23 @@ export default function HospitalDashboardPage() {
   // UI Tabs for Navigation
   const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'STAFF_REG' | 'DUTY_ASSIGN' | 'APPOINTMENTS' | 'REVENUE'>('OVERVIEW');
 
-  // Modal State for New Staff
+  // Modal State for New Staff (ADDED EMAIL & PASSWORD FIELDS)
   const [showStaffModal, setShowStaffModal] = useState(false);
-  const [newStaff, setNewStaff] = useState({ name: '', role: 'DOCTOR', department: '' });
+  const [newStaff, setNewStaff] = useState({ 
+    name: '', 
+    email: '',
+    password: '',
+    role: 'DOCTOR', 
+    department: '' 
+  });
 
   // Dummy State Data (Easily connected to API/Database)
   const [staffList, setStaffList] = useState<StaffMember[]>([
-    { id: 'STF-001', name: 'Dr. Aminu Kano', role: 'DOCTOR', department: 'Cardiology', dutyStatus: 'ON_DUTY' },
-    { id: 'STF-002', name: 'Nurse Hauwa Ibrahim', role: 'NURSE', department: 'Emergency', dutyStatus: 'ON_DUTY' },
-    { id: 'STF-003', name: 'Musa Lab Tech', role: 'LAB_TECH', department: 'Diagnostics', dutyStatus: 'ON_DUTY' },
-    { id: 'STF-004', name: 'Fatima Reception', role: 'RECEPTIONIST', department: 'Front Desk', dutyStatus: 'ON_DUTY' },
-    { id: 'STF-005', name: 'Pharm. Kabiru', role: 'PHARMACIST', department: 'Pharmacy', dutyStatus: 'OFF_DUTY' },
+    { id: 'STF-001', name: 'Dr. Aminu Kano', email: 'aminu@hospital.com', role: 'DOCTOR', department: 'Cardiology', dutyStatus: 'ON_DUTY' },
+    { id: 'STF-002', name: 'Nurse Hauwa Ibrahim', email: 'hauwa@hospital.com', role: 'NURSE', department: 'Emergency', dutyStatus: 'ON_DUTY' },
+    { id: 'STF-003', name: 'Musa Lab Tech', email: 'musa@hospital.com', role: 'LAB_TECH', department: 'Diagnostics', dutyStatus: 'ON_DUTY' },
+    { id: 'STF-004', name: 'Fatima Reception', email: 'fatima@hospital.com', role: 'RECEPTIONIST', department: 'Front Desk', dutyStatus: 'ON_DUTY' },
+    { id: 'STF-005', name: 'Pharm. Kabiru', email: 'kabiru@hospital.com', role: 'PHARMACIST', department: 'Pharmacy', dutyStatus: 'OFF_DUTY' },
   ]);
 
   const [appointments, setAppointments] = useState<Appointment[]>([
@@ -82,21 +89,31 @@ export default function HospitalDashboardPage() {
     router.push('/apt-login');
   };
 
+  // HANDLER: ADD NEW STAFF WITH SECURE CREDENTIALS
   const handleAddStaff = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newStaff.name || !newStaff.department) return;
+    if (!newStaff.name || !newStaff.email || !newStaff.password || !newStaff.department) {
+      alert('Please fill out all required fields including login credentials.');
+      return;
+    }
 
     const created: StaffMember = {
       id: `STF-00${staffList.length + 1}`,
       name: newStaff.name,
+      email: newStaff.email,
       role: newStaff.role as any,
       department: newStaff.department,
       dutyStatus: 'OFF_DUTY',
     };
 
+    // Save newly created staff (In real backend, password will be hashed and stored)
     setStaffList([...staffList, created]);
-    setNewStaff({ name: '', role: 'DOCTOR', department: '' });
+    
+    // Clear Form
+    setNewStaff({ name: '', email: '', password: '', role: 'DOCTOR', department: '' });
     setShowStaffModal(false);
+    
+    alert(`Staff ${created.name} registered successfully! They can now login with email: ${created.email}`);
   };
 
   const toggleDutyStatus = (id: string) => {
@@ -237,9 +254,9 @@ export default function HospitalDashboardPage() {
                 <h4 className="font-bold text-sm text-white">👨‍⚕️ Doctor Console</h4>
                 <p className="text-xs text-slate-400 mt-1">Consultation EHR & Telemedicine portal.</p>
               </Link>
-              <Link href="/lab/" className="p-4 bg-slate-900 border border-slate-800 rounded-2xl hover:border-purple-500 transition block">
-                <h4 className="font-bold text-sm text-white">🔬 Lab Technician Console</h4>
-                <p className="text-xs text-slate-400 mt-1">Upload & dispatch diagnostic reports.</p>
+              <Link href="/nurse/" className="p-4 bg-slate-900 border border-slate-800 rounded-2xl hover:border-rose-500 transition block">
+                <h4 className="font-bold text-sm text-white">🩺 Nursing Station</h4>
+                <p className="text-xs text-slate-400 mt-1">Ward management & inpatient vitals monitor.</p>
               </Link>
               <Link href="/pharmacy/" className="p-4 bg-slate-900 border border-slate-800 rounded-2xl hover:border-emerald-500 transition block">
                 <h4 className="font-bold text-sm text-white">💊 Pharmacy Portal</h4>
@@ -268,6 +285,7 @@ export default function HospitalDashboardPage() {
                   <tr>
                     <th className="p-3">Staff ID</th>
                     <th className="p-3">Full Name</th>
+                    <th className="p-3">Email Address</th>
                     <th className="p-3">Role</th>
                     <th className="p-3">Department</th>
                     <th className="p-3">Duty Status</th>
@@ -278,6 +296,7 @@ export default function HospitalDashboardPage() {
                     <tr key={staff.id} className="hover:bg-slate-800/40">
                       <td className="p-3 font-mono font-bold text-sky-400">{staff.id}</td>
                       <td className="p-3 font-bold text-white">{staff.name}</td>
+                      <td className="p-3 text-slate-400">{staff.email}</td>
                       <td className="p-3">
                         <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-800 border border-slate-700 text-amber-300">
                           {staff.role}
@@ -390,7 +409,7 @@ export default function HospitalDashboardPage() {
 
       </main>
 
-      {/* MODAL: REGISTER STAFF */}
+      {/* MODAL: REGISTER STAFF (UPDATED WITH EMAIL & PASSWORD) */}
       {showStaffModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-md w-full space-y-4 shadow-2xl">
@@ -405,6 +424,30 @@ export default function HospitalDashboardPage() {
                   placeholder="e.g. Dr. Fatima Usman / Nurse Aliyu"
                   value={newStaff.name}
                   onChange={(e) => setNewStaff({ ...newStaff, name: e.target.value })}
+                  className="w-full mt-1 p-3 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:border-sky-500 outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold text-slate-400 uppercase">Official Email (Login ID)</label>
+                <input
+                  type="email"
+                  required
+                  placeholder="e.g. fatima@hospital.com"
+                  value={newStaff.email}
+                  onChange={(e) => setNewStaff({ ...newStaff, email: e.target.value })}
+                  className="w-full mt-1 p-3 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:border-sky-500 outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold text-slate-400 uppercase">Assign Account Password</label>
+                <input
+                  type="password"
+                  required
+                  placeholder="••••••••"
+                  value={newStaff.password}
+                  onChange={(e) => setNewStaff({ ...newStaff, password: e.target.value })}
                   className="w-full mt-1 p-3 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:border-sky-500 outline-none"
                 />
               </div>
@@ -458,4 +501,4 @@ export default function HospitalDashboardPage() {
 
     </div>
   );
-                                                }
+      }
