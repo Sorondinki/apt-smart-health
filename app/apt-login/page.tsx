@@ -57,9 +57,9 @@ export default function StaffAndAgentLoginPage() {
       // Karkatar da ma'aikaci zuwa ofishinsa na gaskiya
       if (staffAccount.type === 'MD Staff') {
         localStorage.setItem('isMasterAuthenticated', 'true');
-        router.push('/md-office');
+        router.push('/md-office/page');
       } else if (staffAccount.type === 'APT Field Agent') {
-        router.push('/agent');
+        router.push('/agent/page');
       }
       return;
     }
@@ -70,12 +70,12 @@ export default function StaffAndAgentLoginPage() {
       localStorage.setItem('isMasterAuthenticated', 'true');
       localStorage.setItem('userEmail', cleanEmail);
       localStorage.setItem('userRole', 'MD Staff');
-      router.push('/md-office');
+      router.push('/md-office/page');
     } else if (cleanEmail.includes('agent')) {
       localStorage.setItem('isLoggedIn', 'true');
       localStorage.setItem('userEmail', cleanEmail);
       localStorage.setItem('userRole', 'APT Field Agent');
-      router.push('/agent');
+      router.push('/agent/page');
     } else {
       setErrorMessage('Babu ma\'aikaci da ke da wannan Email din a tsarinmu.');
     }
@@ -149,5 +149,4 @@ export default function StaffAndAgentLoginPage() {
       </div>
     </div>
   );
-          }
-    
+}
