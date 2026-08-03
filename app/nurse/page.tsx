@@ -140,7 +140,7 @@ export default function NursingStationPage() {
           <button
             onClick={() => {
               localStorage.removeItem('isLoggedIn');
-              router.push('/apt-login');
+              router.push('/login');
             }}
             className="px-3 py-2 bg-red-600/20 text-red-400 hover:bg-red-600 hover:text-white text-xs font-bold rounded-xl border border-red-500/30 transition"
           >
