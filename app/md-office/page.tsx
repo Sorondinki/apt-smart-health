@@ -272,12 +272,14 @@ export default function ManagingDirectorOfficePage() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans flex flex-col pb-10">
       
+
       {/* Network Alert Bar for local connectivity */}
       {!isOnline && (
-        <div className="bg-red-600 text-white text-[11px] font-bold text-center py-1 px-2">
-          ⚠️ Network Disconnected: Operating in Offline Cache Mode.
-        </div>
+       <div className="bg-red-500/20 border border-red-500/40 p-2.5 rounded-xl text-red-300 text-xs text-center font-bold">
+       ⚠️ Offline Mode: Internet Connection Lost!
+      </div>
       )}
+      
 
       {/* Responsive Header Bar */}
       <header className="border-b border-amber-500/30 bg-slate-900/90 backdrop-blur-md sticky top-0 z-40">
