@@ -329,7 +329,7 @@ export default function ManagingDirectorOfficePage() {
             {activeCallType === 'INDIVIDUAL' && targetEntity && (
               <div className="w-full h-full flex flex-col items-center justify-center bg-slate-950 p-4 sm:p-6 space-y-3 sm:space-y-4 rounded-xl sm:rounded-2xl border border-amber-500/20 text-center">
                 <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-4 border-amber-500 flex items-center justify-center bg-amber-500/10 text-2xl sm:text-3xl animate-pulse">
-                  {targetEntity.type === 'Agent' ? '💼' : '🏥'}
+                  {'type' in targetEntity && targetEntity.type === 'Agent' ? '💼' : '🏥'}
                 </div>
                 <div>
                   <h3 className="text-sm sm:text-base font-bold text-white">
