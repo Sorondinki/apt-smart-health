@@ -8,6 +8,28 @@ interface DoctorProfile {
   name: string;
   specialty: string;
   avatarUrl: string;
+  phone?: string;
+}
+
+interface Patient {
+  id: string;
+  name: string;
+  reason: string;
+  time?: string;
+  labResult: string;
+  avatarUrl: string;
+}
+
+interface PrescriptionRecord {
+  id: string;
+  patientId: string;
+  patientName: string;
+  medicationName: string;
+  dosage: string;
+  duration: string;
+  type: 'pharmacy' | 'lab';
+  doctorName: string;
+  date: string;
 }
 
 export default function DoctorConsolePage() {
@@ -16,14 +38,21 @@ export default function DoctorConsolePage() {
   const [isVideoActive, setIsVideoActive] = useState(false);
   const [micMuted, setMicMuted] = useState(false);
   const [camOff, setCamOff] = useState(false);
+  const [activeVideoPeer, setActiveVideoPeer] = useState<string>('');
 
-  // Multi-Party Conference Call Invite Modal
+  // Notifications State
+  const [notifications, setNotifications] = useState<string[]>([
+    '🔔 Reception: An haɗa maras lafiya Amina Ibrahim tare da ku.',
+  ]);
+  const [showNotificationMenu, setShowNotificationMenu] = useState(false);
+
+  // Multi-Party Conference Modal
   const [isConferenceModalOpen, setIsConferenceModalOpen] = useState(false);
   const [invitedParticipants, setInvitedParticipants] = useState<string[]>([
     'Patient (Active)',
   ]);
 
-  // Dynamic Doctors List State
+  // Dynamic Doctors List
   const [onDutyDoctors, setOnDutyDoctors] = useState<DoctorProfile[]>([
     {
       id: 'DOC-101',
@@ -31,21 +60,26 @@ export default function DoctorConsolePage() {
       specialty: 'General Medicine / Lead Tele-Consultant',
       avatarUrl: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=250',
     },
+    {
+      id: 'DOC-102',
+      name: 'Dr. Zainab Bello',
+      specialty: 'Pediatric Specialist',
+      avatarUrl: 'https://images.unsplash.com/photo-1594824813566-788530364841?auto=format&fit=crop&q=80&w=250',
+    }
   ]);
 
-  // E-Prescription Form States
+  // Form States
   const [medicationName, setMedicationName] = useState('');
   const [dosage, setDosage] = useState('');
   const [duration, setDuration] = useState('');
   const [clinicalNote, setClinicalNote] = useState('');
 
-  // Patient Queue Data
-  const [patientsQueue] = useState([
+  // Patient Queue
+  const [patientsQueue, setPatientsQueue] = useState<Patient[]>([
     {
       id: 'APT-8902',
       name: 'Amina Ibrahim',
       reason: 'Routine Follow-up',
-      status: 'Ready Now',
       labResult: 'Pending Lab Request',
       avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=250',
     },
@@ -53,23 +87,16 @@ export default function DoctorConsolePage() {
       id: 'APT-7710',
       name: 'Usman Bello',
       reason: 'Lab Result Review',
-      time: '10:45 AM',
       labResult: 'MP: Positive (++), Widal: 1:80',
       avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=250',
     },
-    {
-      id: 'APT-9122',
-      name: 'Fatima Abubakar',
-      reason: 'General Checkup',
-      time: '11:30 AM',
-      labResult: 'Fasting Blood Sugar: 95 mg/dL',
-      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=250',
-    },
   ]);
 
-  const [activePatient, setActivePatient] = useState(patientsQueue[0]);
+  const [activePatient, setActivePatient] = useState<Patient>(patientsQueue[0]);
 
-  // Load Session and Fetch Newly Registered Doctors
+  // History of Attended Patients & Prescriptions
+  const [attendedPatients, setAttendedPatients] = useState<PrescriptionRecord[]>([]);
+
   useEffect(() => {
     const isLoggedIn = localStorage.getItem('isLoggedIn');
     if (!isLoggedIn) {
@@ -77,69 +104,97 @@ export default function DoctorConsolePage() {
       return;
     }
 
-    // Fetch registered consultants/doctors dynamically from localStorage
-    const savedAccounts = localStorage.getItem('apt_registered_accounts');
-    if (savedAccounts) {
+    // Load saved prescriptions from local storage
+    const savedPrescriptions = localStorage.getItem('apt_patient_prescriptions');
+    if (savedPrescriptions) {
       try {
-        const parsed = JSON.parse(savedAccounts);
-        const registeredDocs = parsed
-          .filter((acc: any) => acc.type === 'Private Consultant' || acc.type === 'MD Staff')
-          .map((acc: any) => ({
-            id: acc.id,
-            name: acc.name,
-            specialty: acc.type === 'Private Consultant' ? 'Private Medical Consultant' : 'MD Executive Staff',
-            avatarUrl: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&q=80&w=250',
-          }));
-
-        if (registeredDocs.length > 0) {
-          setOnDutyDoctors((prev) => {
-            const existingIds = prev.map((d) => d.id);
-            const filteredNew = registeredDocs.filter((d: any) => !existingIds.includes(d.id));
-            return [...prev, ...filteredNew];
-          });
-        }
+        setAttendedPatients(JSON.parse(savedPrescriptions));
       } catch (e) {
-        console.error('Error fetching registered doctors list:', e);
+        console.error(e);
       }
     }
 
     setIsAuthenticated(true);
   }, []);
 
-  const handleToggleParticipant = (departmentLabel: string) => {
-    if (invitedParticipants.includes(departmentLabel)) {
-      setInvitedParticipants((prev) => prev.filter((p) => p !== departmentLabel));
-    } else {
-      setInvitedParticipants((prev) => [...prev, departmentLabel]);
-    }
+  const handleStartDoctorVideoCall = (doctorName: string) => {
+    setActiveVideoPeer(`Doctor Peer: ${doctorName}`);
+    setIsVideoActive(true);
   };
 
-  const handleSaveNote = () => {
-    if (!clinicalNote) {
-      alert('Please enter clinical findings before saving.');
-      return;
-    }
-    alert(`Clinical consultation note successfully saved to ${activePatient.name}'s EHR.`);
-    setClinicalNote('');
+  const handleStartPatientVideoCall = (patient: Patient) => {
+    setActivePatient(patient);
+    setActiveVideoPeer(`Patient: ${patient.name}`);
+    setIsVideoActive(true);
   };
 
-  const handleSendOrder = () => {
+  const handleSendOrderAndPrescription = () => {
     if (orderType === 'pharmacy' && (!medicationName || !dosage)) {
-      alert('Please fill in the medication name and dosage.');
+      alert('Don Allah shigar da sunan magani da adadin shan sa (dosage).');
       return;
     }
 
     if (orderType === 'lab' && !medicationName) {
-      alert('Please enter the required laboratory test name.');
+      alert('Don Allah shigar da gwajin da kake buƙata (Lab Test).');
       return;
     }
 
-    const destination = orderType === 'pharmacy' ? 'Pharmacy Desk' : 'Laboratory Department';
-    alert(`Order for ${activePatient.name} successfully dispatched to ${destination} & Patient EHR!`);
+    const newPrescription: PrescriptionRecord = {
+      id: 'RX-' + Math.floor(100000 + Math.random() * 900000),
+      patientId: activePatient.id,
+      patientName: activePatient.name,
+      medicationName,
+      dosage: orderType === 'pharmacy' ? dosage : 'N/A (Lab Test)',
+      duration: orderType === 'pharmacy' ? duration : 'N/A',
+      type: orderType,
+      doctorName: onDutyDoctors[0].name,
+      date: new Date().toLocaleDateString(),
+    };
+
+    const updatedList = [newPrescription, ...attendedPatients];
+    setAttendedPatients(updatedList);
+
+    // Save to LocalStorage for Patient Dashboard Printing
+    localStorage.setItem('apt_patient_prescriptions', JSON.stringify(updatedList));
+
+    alert(`✅ An yi nasarar ƙira/bada Prescription na ${activePatient.name}. Maras lafiya zai iya ganinsa da yin Print a dashboard dinsa!`);
 
     setMedicationName('');
     setDosage('');
     setDuration('');
+  };
+
+  const handlePrintPrescription = (rx: PrescriptionRecord) => {
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>E-Prescription - ${rx.patientName}</title>
+            <style>
+              body { font-family: Arial, sans-serif; padding: 20px; line-height: 1.6; }
+              .header { border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px; }
+              .card { border: 1px solid #ccc; padding: 15px; border-radius: 8px; }
+            </style>
+          </head>
+          <body>
+            <div class="header">
+              <h2>Hospital Central E-Prescription</h2>
+              <p><strong>Doctor:</strong> ${rx.doctorName} | <strong>Date:</strong> ${rx.date}</p>
+            </div>
+            <div class="card">
+              <h3>Patient: ${rx.patientName} (${rx.patientId})</h3>
+              <p><strong>Order Type:</strong> ${rx.type.toUpperCase()}</p>
+              <p><strong>Prescription / Test:</strong> ${rx.medicationName}</p>
+              <p><strong>Dosage:</strong> ${rx.dosage}</p>
+              <p><strong>Duration:</strong> ${rx.duration}</p>
+            </div>
+            <br/><button onclick="window.print()">Print Document</button>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+    }
   };
 
   if (!isAuthenticated) {
@@ -153,232 +208,210 @@ export default function DoctorConsolePage() {
   const primaryDoctor = onDutyDoctors[0];
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 font-sans flex flex-col">
+    <div className="min-h-screen bg-slate-900 text-slate-100 font-sans flex flex-col pb-10">
       {/* Navigation Header */}
-      <header className="bg-slate-800/80 border-b border-slate-700/60 px-6 py-4 flex items-center justify-between sticky top-0 z-30 backdrop-blur-md">
+      <header className="bg-slate-800/80 border-b border-slate-700/60 px-4 sm:px-6 py-4 flex flex-wrap items-center justify-between sticky top-0 z-40 backdrop-blur-md gap-4">
         <div className="flex items-center gap-3">
-          <div className="relative w-11 h-11 rounded-2xl overflow-hidden border-2 border-sky-500/60 bg-slate-950 flex-shrink-0 shadow-lg shadow-sky-500/20">
+          <div className="relative w-10 h-10 rounded-2xl overflow-hidden border-2 border-sky-500/60 bg-slate-950 flex-shrink-0 shadow-lg">
             <img src={primaryDoctor.avatarUrl} alt={primaryDoctor.name} className="w-full h-full object-cover" />
           </div>
           <div>
-            <h1 className="font-extrabold text-sm sm:text-base text-white tracking-tight flex items-center gap-2">
+            <h1 className="font-extrabold text-xs sm:text-sm text-white tracking-tight flex items-center gap-2">
               {primaryDoctor.name}
-              <span className="px-2 py-0.5 rounded-full text-[10px] bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/30">
-                ● Live & Online
+              <span className="px-2 py-0.5 rounded-full text-[9px] bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/30">
+                ● Live
               </span>
             </h1>
-            <p className="text-xs text-slate-400">{primaryDoctor.specialty}</p>
+            <p className="text-[10px] text-slate-400">{primaryDoctor.specialty}</p>
           </div>
         </div>
 
+        {/* Right Action Icons: Notifications & Landing Page Link */}
         <div className="flex items-center gap-3">
+          {/* Notification Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setShowNotificationMenu(!showNotificationMenu)}
+              className="p-2.5 bg-slate-900 hover:bg-slate-700 rounded-xl border border-slate-700 text-slate-200 text-xs font-bold relative transition"
+            >
+              🔔
+              {notifications.length > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full text-[9px] flex items-center justify-center font-bold">
+                  {notifications.length}
+                </span>
+              )}
+            </button>
+
+            {showNotificationMenu && (
+              <div className="absolute right-0 mt-2 w-72 bg-slate-950 border border-slate-800 rounded-2xl shadow-2xl p-3 z-50 space-y-2">
+                <h4 className="text-xs font-bold text-white border-b border-slate-800 pb-2">Notifications</h4>
+                <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                  {notifications.map((note, i) => (
+                    <div key={i} className="p-2 bg-slate-900 rounded-lg text-[11px] text-slate-300">
+                      {note}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
           <button
             onClick={() => setIsConferenceModalOpen(true)}
-            className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded-xl shadow-lg transition flex items-center gap-2"
+            className="px-3 py-2 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded-xl shadow-lg transition flex items-center gap-1.5"
           >
-            <span>🌐 Invite Departments to Video Conference</span>
+            <span>🌐 Video Conf</span>
           </button>
 
+          {/* Link to Landing Page app/page.tsx instead of /dashboard */}
           <Link
-            href="/dashboard/"
-            className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-xs font-bold rounded-xl transition text-slate-200"
+            href="/"
+            className="px-3.5 py-2 bg-slate-700 hover:bg-slate-600 text-xs font-bold rounded-xl transition text-slate-200"
           >
-            ← Hospital Dashboard
+            ← Babban Asibiti Page
           </Link>
         </div>
       </header>
 
-      {/* Main Grid */}
+      {/* Main Responsive Grid */}
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 p-4 sm:p-6 max-w-7xl mx-auto w-full">
-        {/* Left Column: Video Window */}
+        {/* Left Column: Interactive Video Call & Findings */}
         <div className="lg:col-span-8 flex flex-col gap-4">
-          <div className="bg-slate-950 rounded-3xl border border-slate-800 relative min-h-[380px] sm:min-h-[460px] flex items-center justify-center overflow-hidden shadow-2xl">
+          <div className="bg-slate-950 rounded-3xl border border-slate-800 relative min-h-[360px] sm:min-h-[440px] flex items-center justify-center overflow-hidden shadow-2xl">
             {isVideoActive ? (
-              <div className="w-full h-full relative flex items-center justify-center bg-slate-900">
-                {/* Active Video Screen */}
-                <div className="text-center p-6 space-y-3">
-                  <div className="relative w-28 h-28 rounded-full border-4 border-sky-500 mx-auto overflow-hidden shadow-2xl animate-pulse">
+              <div className="w-full h-full relative flex items-center justify-center bg-slate-900 p-6">
+                <div className="text-center space-y-3">
+                  <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-full border-4 border-sky-500 mx-auto overflow-hidden shadow-2xl animate-pulse">
                     <img src={activePatient.avatarUrl} alt={activePatient.name} className="w-full h-full object-cover" />
                   </div>
-                  <h3 className="text-lg font-bold text-white">{activePatient.name} (Patient)</h3>
+                  <h3 className="text-base sm:text-lg font-bold text-white">
+                    {activeVideoPeer || activePatient.name}
+                  </h3>
                   
-                  {/* Multi-Party Participants Badge Bar */}
                   <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
                     {invitedParticipants.map((part) => (
-                      <span
-                        key={part}
-                        className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30"
-                      >
-                        ● Connected: {part}
+                      <span key={part} className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                        ● Live Node: {part}
                       </span>
                     ))}
                   </div>
                 </div>
 
-                {/* Self Preview */}
-                <div className="absolute top-4 right-4 w-32 h-24 sm:w-40 sm:h-28 bg-slate-800 rounded-2xl border border-slate-700/80 shadow-xl overflow-hidden flex items-center justify-center">
+                {/* Self View Floating Box */}
+                <div className="absolute top-4 right-4 w-28 h-20 sm:w-36 sm:h-24 bg-slate-800 rounded-2xl border border-slate-700 shadow-xl overflow-hidden flex items-center justify-center">
                   {camOff ? (
                     <span className="text-[10px] text-slate-400 font-bold">Camera Off</span>
                   ) : (
-                    <div className="w-full h-full relative">
-                      <img src={primaryDoctor.avatarUrl} alt={primaryDoctor.name} className="w-full h-full object-cover" />
-                      <span className="absolute bottom-1 right-1 bg-slate-950/80 text-sky-400 text-[9px] px-1.5 py-0.5 rounded font-bold">
-                        Dr. Jamilu (Self)
-                      </span>
-                    </div>
+                    <img src={primaryDoctor.avatarUrl} alt="Doctor" className="w-full h-full object-cover" />
                   )}
+                </div>
+
+                {/* Call Action Bar */}
+                <div className="absolute bottom-4 inset-x-auto bg-slate-900/90 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-slate-700 flex items-center gap-2 sm:gap-4 shadow-2xl">
+                  <button
+                    onClick={() => setMicMuted(!micMuted)}
+                    className={`px-3 py-2 rounded-xl text-xs font-bold transition ${micMuted ? 'bg-red-500 text-white' : 'bg-slate-800 text-slate-200'}`}
+                  >
+                    {micMuted ? '🎙️ Unmute' : '🎙️ Mute'}
+                  </button>
+                  <button
+                    onClick={() => setCamOff(!camOff)}
+                    className={`px-3 py-2 rounded-xl text-xs font-bold transition ${camOff ? 'bg-red-500 text-white' : 'bg-slate-800 text-slate-200'}`}
+                  >
+                    {camOff ? '📹 Cam On' : '📹 Cam Off'}
+                  </button>
+                  <button
+                    onClick={() => setIsVideoActive(false)}
+                    className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-extrabold text-xs rounded-xl transition"
+                  >
+                    End Call
+                  </button>
                 </div>
               </div>
             ) : (
-              /* Waiting Screen */
-              <div className="text-center p-8 space-y-4">
-                <div className="relative w-20 h-20 rounded-3xl overflow-hidden border border-sky-500/40 mx-auto shadow-lg">
+              <div className="text-center p-6 space-y-4">
+                <div className="w-16 h-16 rounded-2xl overflow-hidden border border-sky-500/40 mx-auto shadow-lg">
                   <img src={activePatient.avatarUrl} alt={activePatient.name} className="w-full h-full object-cover" />
                 </div>
                 <div>
-                  <h3 className="text-base font-extrabold text-white">Start Consultation with {activePatient.name}</h3>
-                  <p className="text-xs text-slate-400 max-w-sm mt-1 mx-auto">
-                    Reason: {activePatient.reason} ({activePatient.id})
-                  </p>
+                  <h3 className="text-sm sm:text-base font-extrabold text-white">Start Session with {activePatient.name}</h3>
+                  <p className="text-xs text-slate-400 mt-1">Reason: {activePatient.reason} ({activePatient.id})</p>
                 </div>
                 <button
-                  onClick={() => setIsVideoActive(true)}
-                  className="px-6 py-3 bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-sky-600/30 transition"
+                  onClick={() => handleStartPatientVideoCall(activePatient)}
+                  className="px-5 py-2.5 bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs rounded-xl shadow-lg transition"
                 >
-                  Start Encrypted Video Session
-                </button>
-              </div>
-            )}
-
-            {/* Video Controls */}
-            {isVideoActive && (
-              <div className="absolute bottom-4 inset-x-0 mx-auto w-fit bg-slate-900/90 backdrop-blur-md px-6 py-3 rounded-2xl border border-slate-700/80 flex items-center gap-4 shadow-2xl">
-                <button
-                  onClick={() => setMicMuted(!micMuted)}
-                  className={`p-3 rounded-xl text-xs font-bold transition ${
-                    micMuted ? 'bg-red-500 text-white' : 'bg-slate-800 hover:bg-slate-700 text-slate-200'
-                  }`}
-                >
-                  {micMuted ? '🎙️ Unmute' : '🎙️ Mute'}
-                </button>
-
-                <button
-                  onClick={() => setCamOff(!camOff)}
-                  className={`p-3 rounded-xl text-xs font-bold transition ${
-                    camOff ? 'bg-red-500 text-white' : 'bg-slate-800 hover:bg-slate-700 text-slate-200'
-                  }`}
-                >
-                  {camOff ? '📹 Cam On' : '📹 Cam Off'}
-                </button>
-
-                <button
-                  onClick={() => setIsConferenceModalOpen(true)}
-                  className="px-4 py-3 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs rounded-xl transition"
-                >
-                  + Add Department Node
-                </button>
-
-                <button
-                  onClick={() => setIsVideoActive(false)}
-                  className="px-5 py-3 bg-red-600 hover:bg-red-700 text-white font-extrabold text-xs rounded-xl shadow-lg transition"
-                >
-                  End Call
+                  📹 Start Encrypted Video Call
                 </button>
               </div>
             )}
           </div>
 
-          {/* Laboratory Findings Display */}
-          <div className="bg-slate-800/60 border border-purple-500/30 rounded-3xl p-5 space-y-2">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-purple-400 flex items-center gap-2">
-                <span>🔬 Laboratory Findings</span>
-              </h3>
-              <span className="text-[10px] font-bold text-slate-400">Patient: {activePatient.id}</span>
-            </div>
-            <div className="p-3 bg-slate-900/80 border border-slate-700/60 rounded-xl text-xs text-slate-200">
-              <p className="font-semibold">{activePatient.labResult}</p>
-            </div>
-          </div>
-
-          {/* Clinical Consultation Notes */}
+          {/* Notes & Lab Display */}
           <div className="bg-slate-800/60 border border-slate-700/60 rounded-3xl p-5 space-y-3">
             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
-              Live Consultation Findings for {activePatient.name}
+              Live Clinical Observation Note ({activePatient.name})
             </h3>
             <textarea
               rows={3}
               value={clinicalNote}
               onChange={(e) => setClinicalNote(e.target.value)}
-              placeholder="Type clinical observations, symptoms, or diagnostic findings..."
-              className="w-full bg-slate-900 border border-slate-700/80 rounded-2xl p-4 text-xs text-slate-200 outline-none focus:border-sky-500 transition"
+              placeholder="Rubuta bayanin lafiyar maras lafiya a nan..."
+              className="w-full bg-slate-900 border border-slate-700/80 rounded-2xl p-3 text-xs text-slate-200 outline-none focus:border-sky-500"
             />
-            <div className="flex justify-end">
-              <button
-                onClick={handleSaveNote}
-                className="px-5 py-2.5 bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs rounded-xl shadow-md transition"
-              >
-                Save to Patient EHR
-              </button>
-            </div>
           </div>
         </div>
 
-        {/* Right Column: Queue & On-Duty Staff */}
+        {/* Right Column: Doctors, Queue & E-Prescriptions */}
         <div className="lg:col-span-4 space-y-5">
-          {/* On-Duty Doctors / Intake Consultants */}
-          <div className="bg-slate-800/60 border border-slate-700/60 rounded-3xl p-5 space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-amber-400">
-                On-Duty Doctors & Consultants ({onDutyDoctors.length})
-              </h3>
-            </div>
+          {/* On-Duty Doctors - Direct Call Option */}
+          <div className="bg-slate-800/60 border border-slate-700/60 rounded-3xl p-4 space-y-3">
+            <h3 className="text-xs font-bold uppercase text-amber-400">
+              On-Duty Consultants (Call Doctor)
+            </h3>
             <div className="space-y-2">
               {onDutyDoctors.map((doc) => (
-                <div key={doc.id} className="p-2.5 bg-slate-900/80 rounded-xl border border-slate-700/60 flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg overflow-hidden bg-slate-800 border border-slate-600 flex-shrink-0">
-                    <img src={doc.avatarUrl} alt={doc.name} className="w-full h-full object-cover" />
+                <div key={doc.id} className="p-2.5 bg-slate-900/80 rounded-xl border border-slate-700/60 flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <img src={doc.avatarUrl} alt={doc.name} className="w-7 h-7 rounded-lg object-cover" />
+                    <div>
+                      <p className="font-bold text-xs text-white">{doc.name}</p>
+                      <p className="text-[10px] text-slate-400">{doc.specialty}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-bold text-xs text-white">{doc.name}</p>
-                    <p className="text-[10px] text-slate-400">{doc.specialty}</p>
-                  </div>
+                  <button
+                    onClick={() => handleStartDoctorVideoCall(doc.name)}
+                    className="px-2.5 py-1 bg-purple-600 hover:bg-purple-500 text-white text-[10px] font-bold rounded-lg transition"
+                  >
+                    📹 Call
+                  </button>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Patients Queue */}
-          <div className="bg-slate-800/60 border border-slate-700/60 rounded-3xl p-5 space-y-4">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
-              Today's Patient Queue ({patientsQueue.length})
-            </h3>
-            <div className="space-y-3">
+          {/* Queue List */}
+          <div className="bg-slate-800/60 border border-slate-700/60 rounded-3xl p-4 space-y-3">
+            <h3 className="text-xs font-bold uppercase text-slate-400">Today's Patient Queue</h3>
+            <div className="space-y-2">
               {patientsQueue.map((pat) => (
                 <div
                   key={pat.id}
                   onClick={() => setActivePatient(pat)}
-                  className={`p-3.5 rounded-2xl border flex items-center justify-between cursor-pointer transition ${
-                    activePatient.id === pat.id
-                      ? 'bg-slate-900 border-sky-500/60 shadow-lg'
-                      : 'bg-slate-900/50 border-slate-700/50 hover:border-slate-600'
+                  className={`p-3 rounded-2xl border flex items-center justify-between cursor-pointer transition ${
+                    activePatient.id === pat.id ? 'bg-slate-900 border-sky-500/60' : 'bg-slate-900/50 border-slate-700/50'
                   }`}
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl overflow-hidden bg-slate-800 border border-slate-700 flex-shrink-0">
-                      <img src={pat.avatarUrl} alt={pat.name} className="w-full h-full object-cover" />
-                    </div>
+                  <div className="flex items-center gap-2.5">
+                    <img src={pat.avatarUrl} alt={pat.name} className="w-8 h-8 rounded-xl object-cover" />
                     <div>
                       <p className="font-bold text-xs text-white">{pat.name}</p>
-                      <p className="text-[10px] text-slate-400">{pat.id} • {pat.reason}</p>
+                      <p className="text-[10px] text-slate-400">{pat.id}</p>
                     </div>
                   </div>
                   <button
-                    onClick={() => {
-                      setActivePatient(pat);
-                      setIsVideoActive(true);
-                    }}
-                    className="px-3 py-1.5 bg-sky-600 hover:bg-sky-500 text-white text-[10px] font-bold rounded-lg transition"
+                    onClick={() => handleStartPatientVideoCall(pat)}
+                    className="px-3 py-1 bg-sky-600 hover:bg-sky-500 text-white text-[10px] font-bold rounded-lg transition"
                   >
                     Call
                   </button>
@@ -387,141 +420,136 @@ export default function DoctorConsolePage() {
             </div>
           </div>
 
-          {/* E-Prescription Card */}
-          <div className="bg-slate-800/60 border border-slate-700/60 rounded-3xl p-5 space-y-4">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
-              Generate E-Prescription / Order
-            </h3>
+          {/* E-Prescription Dispatcher */}
+          <div className="bg-slate-800/60 border border-slate-700/60 rounded-3xl p-5 space-y-3">
+            <h3 className="text-xs font-bold uppercase text-slate-400">Generate E-Prescription</h3>
 
-            <div className="space-y-3">
-              <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
-                  {orderType === 'pharmacy' ? 'Medication Name' : 'Laboratory Test'}
-                </label>
+            <input
+              type="text"
+              value={medicationName}
+              onChange={(e) => setMedicationName(e.target.value)}
+              placeholder={orderType === 'pharmacy' ? 'Sunan Magani (e.g. Paracetamol)' : 'Gwajin Lab'}
+              className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none"
+            />
+
+            {orderType === 'pharmacy' && (
+              <div className="grid grid-cols-2 gap-2">
                 <input
                   type="text"
-                  value={medicationName}
-                  onChange={(e) => setMedicationName(e.target.value)}
-                  placeholder={orderType === 'pharmacy' ? 'e.g. Paracetamol 500mg' : 'e.g. Full Blood Count'}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none focus:border-sky-500 transition"
+                  value={dosage}
+                  onChange={(e) => setDosage(e.target.value)}
+                  placeholder="Dosage (2x3)"
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none"
+                />
+                <input
+                  type="text"
+                  value={duration}
+                  onChange={(e) => setDuration(e.target.value)}
+                  placeholder="Kwanaki (5 Days)"
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none"
                 />
               </div>
+            )}
 
-              {orderType === 'pharmacy' && (
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Dosage</label>
-                    <input
-                      type="text"
-                      value={dosage}
-                      onChange={(e) => setDosage(e.target.value)}
-                      placeholder="2 tabs x 3 daily"
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Duration</label>
-                    <input
-                      type="text"
-                      value={duration}
-                      onChange={(e) => setDuration(e.target.value)}
-                      placeholder="5 Days"
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none"
-                    />
-                  </div>
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 gap-2 mb-3">
-                <button
-                  type="button"
-                  onClick={() => setOrderType('pharmacy')}
-                  className={`py-2 text-xs font-bold rounded-xl border transition ${
-                    orderType === 'pharmacy' ? 'bg-sky-600 border-sky-500 text-white' : 'bg-slate-900 border-slate-700 text-slate-400'
-                  }`}
-                >
-                  💊 Pharmacy Order
-                </button>
-                  <button
-                  type="button"
-                  onClick={() => setOrderType('lab')}
-                  className={`py-2 text-xs font-bold rounded-xl border transition ${
-                    orderType === 'lab' ? 'bg-purple-600 border-purple-500 text-white' : 'bg-slate-900 border-slate-700 text-slate-400'
-                  }`}
-                >
-                  🔬 Lab Request
-                </button>
-              </div>
-
+            <div className="flex gap-2">
               <button
-                onClick={handleSendOrder}
-                className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-lg transition"
+                onClick={() => setOrderType('pharmacy')}
+                className={`flex-1 py-1.5 text-[11px] font-bold rounded-lg border transition ${orderType === 'pharmacy' ? 'bg-sky-600 text-white' : 'bg-slate-900 text-slate-400'}`}
               >
-                Send Request
+                💊 Pharmacy
+              </button>
+              <button
+                onClick={() => setOrderType('lab')}
+                className={`flex-1 py-1.5 text-[11px] font-bold rounded-lg border transition ${orderType === 'lab' ? 'bg-purple-600 text-white' : 'bg-slate-900 text-slate-400'}`}
+              >
+                🔬 Lab
               </button>
             </div>
+
+            <button
+              onClick={handleSendOrderAndPrescription}
+              className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl transition"
+            >
+              Post Prescription to Patient EHR
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Multi-Party Conference Call Invite Modal */}
+      {/* Attended Patients & Prescriptions Log Table */}
+      <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 mt-6">
+        <div className="bg-slate-800/40 border border-slate-700/50 rounded-3xl p-5 space-y-4">
+          <h3 className="text-sm font-bold text-white">Teburin Marasa Lafiya da Aka Bawa Prescription ({attendedPatients.length})</h3>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="border-b border-slate-700 text-slate-400 uppercase text-[10px]">
+                  <th className="py-2.5 px-3">Rx ID</th>
+                  <th className="py-2.5 px-3">Maras Lafiya</th>
+                  <th className="py-2.5 px-3">Order / Magani</th>
+                  <th className="py-2.5 px-3">Dosage / Duration</th>
+                  <th className="py-2.5 px-3">Kwanan Wata</th>
+                  <th className="py-2.5 px-3">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800 text-slate-300">
+                {attendedPatients.map((rx) => (
+                  <tr key={rx.id} className="hover:bg-slate-800/50">
+                    <td className="py-2.5 px-3 font-mono font-bold text-purple-400">{rx.id}</td>
+                    <td className="py-2.5 px-3 font-semibold">{rx.patientName} ({rx.patientId})</td>
+                    <td className="py-2.5 px-3">{rx.medicationName}</td>
+                    <td className="py-2.5 px-3">{rx.dosage} - {rx.duration}</td>
+                    <td className="py-2.5 px-3">{rx.date}</td>
+                    <td className="py-2.5 px-3">
+                      <button
+                        onClick={() => handlePrintPrescription(rx)}
+                        className="px-2.5 py-1 bg-slate-700 hover:bg-slate-600 text-white text-[10px] font-bold rounded-lg transition"
+                      >
+                        🖨️ Print
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      {/* Multi-Party Modal */}
       {isConferenceModalOpen && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-purple-500/40 rounded-3xl p-6 max-w-md w-full space-y-4 shadow-2xl">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h3 className="font-extrabold text-sm text-white flex items-center gap-2">
-                <span>🌐 Multi-Party Inter-Department Call</span>
-              </h3>
-              <button
-                onClick={() => setIsConferenceModalOpen(false)}
-                className="text-slate-400 hover:text-white font-bold text-xs"
-              >
-                ✕
-              </button>
+              <h3 className="font-extrabold text-sm text-white">🌐 Multi-Party Inter-Department Call</h3>
+              <button onClick={() => setIsConferenceModalOpen(false)} className="text-slate-400 hover:text-white font-bold text-xs">✕</button>
             </div>
-
-            <p className="text-xs text-slate-400">
-              Select hospital departments and personnel to join the ongoing video conference call with patient{' '}
-              <strong className="text-white">{activePatient.name}</strong>:
-            </p>
-
+            <p className="text-xs text-slate-400">Zaɓi ɓangaren da kake buƙatar haɗawa a kiran bidiyo:</p>
             <div className="space-y-2">
-              {[
-                { key: 'Hospital Admin Desk', label: '🏥 Hospital Super Admin' },
-                { key: 'Pharmacy Desk', label: '💊 Pharmacy Dispatcher' },
-                { key: 'Laboratory Dept', label: '🔬 Laboratory Diagnostician' },
-                { key: 'Private Consultant', label: '👨‍⚕️ External Specialist Consultant' },
-              ].map((dept) => {
-                const isInvited = invitedParticipants.includes(dept.key);
-                return (
-                  <div
-                    key={dept.key}
-                    onClick={() => handleToggleParticipant(dept.key)}
-                    className={`p-3 rounded-xl border flex items-center justify-between cursor-pointer transition ${
-                      isInvited ? 'bg-purple-900/40 border-purple-500/60 text-white' : 'bg-slate-950 border-slate-800 text-slate-400'
-                    }`}
-                  >
-                    <span className="text-xs font-bold">{dept.label}</span>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border">
-                      {isInvited ? '● Connected' : '+ Add to Call'}
-                    </span>
-                  </div>
-                );
-              })}
+              {['Pharmacy Desk', 'Laboratory Dept', 'Private Consultant'].map((dept) => (
+                <div
+                  key={dept}
+                  onClick={() => {
+                    if (!invitedParticipants.includes(dept)) setInvitedParticipants([...invitedParticipants, dept]);
+                  }}
+                  className="p-3 rounded-xl border bg-slate-950 border-slate-800 text-slate-300 text-xs font-bold cursor-pointer hover:border-purple-500"
+                >
+                  + Add {dept} to Call
+                </div>
+              ))}
             </div>
-
             <button
               onClick={() => {
                 setIsConferenceModalOpen(false);
                 setIsVideoActive(true);
               }}
-              className="w-full py-3 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs rounded-xl shadow-lg transition"
+              className="w-full py-2.5 bg-purple-600 text-white font-bold text-xs rounded-xl"
             >
-              Update Multi-Party Conference Call
+              Start Conference Call
             </button>
           </div>
         </div>
       )}
     </div>
   );
-          }
+                    }
