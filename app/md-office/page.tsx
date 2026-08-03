@@ -1237,7 +1237,7 @@ export default function ManagingDirectorOfficePage() {
                 >
                   Cancel
                 </button>
-                <button
+                 <button
                   type="submit"
                   className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl shadow-lg"
                 >
@@ -1251,4 +1251,5 @@ export default function ManagingDirectorOfficePage() {
 
     </div>
   );
-      }
+}
+      
