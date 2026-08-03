@@ -86,7 +86,7 @@ export default function HospitalDashboardPage() {
 
   const handleLogout = () => {
     localStorage.removeItem('isLoggedIn');
-    router.push('/apt-login');
+    router.push('/login');
   };
 
   // HANDLER: ADD NEW STAFF WITH SECURE CREDENTIALS
