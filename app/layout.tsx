@@ -1,8 +1,13 @@
-import React from 'react';
+import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
+import './globals.css';
+import { Toaster } from 'react-hot-toast';
 
-export const metadata = {
+const inter = Inter({ subsets: ['latin'] });
+
+export const metadata: Metadata = {
   title: 'APT Smart-Health',
-  description: 'Healthcare & Telemedicine Platform',
+  description: 'Executive Medical & Hospital Management System',
 };
 
 export default function RootLayout({
@@ -11,11 +16,23 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="ha">
-      <head>
-        <script src="https://cdn.tailwindcss.com"></script>
-      </head>
-      <body className="bg-slate-50 text-slate-900 antialiased">
+    <html lang="en">
+      <body className={inter.className}>
+        {/* Toast Notifications Setup */}
+        <Toaster 
+          position="top-center" 
+          toastOptions={{
+            duration: 4000,
+            style: {
+              background: '#0f172a',
+              color: '#f8fafc',
+              border: '1px solid #334155',
+              borderRadius: '12px',
+              fontSize: '13px',
+              fontWeight: '600',
+            },
+          }}
+        />
         {children}
       </body>
     </html>
