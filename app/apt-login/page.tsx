@@ -44,7 +44,7 @@ export default function StaffAndAgentLoginPage() {
     } else if (userRole === 'AGENT') {
       router.push('/agent');
     } else {
-      router.push('/dashboard');
+      router.push('/');
     }
 
     setLoading(false);
