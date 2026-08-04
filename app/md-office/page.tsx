@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabaseClient';
 
 interface HospitalEntity {
   id: string;
@@ -32,16 +33,17 @@ interface MissedCallLog {
   timestamp: string;
 }
 
+// Executive Authorized MD Emails List
+const ALLOWED_MD_EMAILS = [
+  'sorondinkiseeme@gmail.com',
+  'mariyashehuibrahim@gmail.com'
+];
+
 export default function ManagingDirectorOfficePage() {
   const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [mdEmail, setMdEmail] = useState('');
   const [isOnline, setIsOnline] = useState(true);
-
-  // Executive Security Clearances
-  const MD_SUPER_EMAIL = 'sorondinkiseeme@gmail.com';
-  const MD_SUPER_EMAIL = 'mariyashehuibrahim@gmail.com';
-  
 
   // State Management
   const [hospitals, setHospitals] = useState<HospitalEntity[]>([]);
@@ -74,10 +76,10 @@ export default function ManagingDirectorOfficePage() {
     contactEmail: ''
   });
 
-  // Timer Tick State (10-Minute Logic)
+  // Timer Tick State (10-Minute Approval Logic)
   const [currentTime, setCurrentTime] = useState(Date.now());
 
-  // Default Directories
+  // Default Fallback Directories
   const defaultHospitals: HospitalEntity[] = [
     { id: 'HOSP-101', name: 'Aminu Kano Teaching Hospital', city: 'Kano', category: 'General Hospital', status: 'Online', contactPhone: '+2348011112222', contactEmail: 'info@akth.gov.ng', approvalStatus: 'APPROVED' },
     { id: 'HOSP-102', name: 'Nassarawa Specialist Hospital', city: 'Kano', category: 'Multi-Branch Network', status: 'Online', contactPhone: '+2348022223333', contactEmail: 'nassarawa@kano.gov.ng', approvalStatus: 'APPROVED' },
@@ -90,7 +92,7 @@ export default function ManagingDirectorOfficePage() {
     { id: 'AGT-003', name: 'Usman Kaduna Rep', region: 'Kaduna Zone', status: 'Offline', type: 'Agent' },
   ];
 
-  // Check Local Network Connection Status
+  // Network Connectivity Monitoring
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
@@ -104,42 +106,41 @@ export default function ManagingDirectorOfficePage() {
     };
   }, []);
 
-  // Authentication & Clearance Check
+  // Supabase Authentication & Clearance Verification
   useEffect(() => {
-    const isLoggedIn = localStorage.getItem('isLoggedIn');
-    const userEmail = localStorage.getItem('userEmail') || '';
-    const bannedUsers = JSON.parse(localStorage.getItem('apt_banned_users') || '[]');
+    const checkExecutiveClearance = async () => {
+      const { data: { session }, error } = await supabase.auth.getSession();
 
-    if (!isLoggedIn) {
-      alert('Security Alert: Authentication required to enter MD Executive Office.');
-      router.push('/apt-login');
-      return;
-    }
+      if (error || !session) {
+        alert('Security Alert: Authentication required to enter MD Executive Office.');
+        router.push('/apt-login');
+        return;
+      }
 
-    if (bannedUsers.includes(userEmail.toLowerCase())) {
-      alert('Access Denied: Account revoked.');
-      localStorage.removeItem('isLoggedIn');
-      router.push('/apt-login');
-      return;
-    }
+      const userEmail = session.user.email?.toLowerCase() || '';
 
-    if (userEmail.toLowerCase() !== MD_SUPER_EMAIL.toLowerCase()) {
-      alert('Unauthorized Access: Managing Director Clearance Required.');
-      router.push('/app');
-      return;
-    }
+      if (!ALLOWED_MD_EMAILS.includes(userEmail)) {
+        alert('Unauthorized Access: Managing Director Clearance Required.');
+        router.push('/');
+        return;
+      }
 
-    setMdEmail(userEmail);
-    setIsAuthenticated(true);
+      setMdEmail(session.user.email || '');
+      setIsAuthenticated(true);
 
-    const savedHospitals = localStorage.getItem('apt_md_hospitals');
-    if (savedHospitals) setHospitals(JSON.parse(savedHospitals));
-    else setHospitals(defaultHospitals);
+      // Load persistent hospital records
+      const savedHospitals = localStorage.getItem('apt_md_hospitals');
+      if (savedHospitals) setHospitals(JSON.parse(savedHospitals));
+      else setHospitals(defaultHospitals);
 
-    const savedMissedCalls = localStorage.getItem('apt_md_missed_calls');
-    if (savedMissedCalls) setMissedCalls(JSON.parse(savedMissedCalls));
+      // Load persistent missed calls logs
+      const savedMissedCalls = localStorage.getItem('apt_md_missed_calls');
+      if (savedMissedCalls) setMissedCalls(JSON.parse(savedMissedCalls));
 
-    setAgents(defaultAgents);
+      setAgents(defaultAgents);
+    };
+
+    checkExecutiveClearance();
   }, [router]);
 
   // Periodic Timer Tick
@@ -153,7 +154,7 @@ export default function ManagingDirectorOfficePage() {
     localStorage.setItem('apt_md_hospitals', JSON.stringify(updatedList));
   };
 
-  // Register Hospital Handler
+  // Register New Medical Entity Handler
   const handleRegisterHospital = (e: React.FormEvent) => {
     e.preventDefault();
     const created: HospitalEntity = {
@@ -174,7 +175,7 @@ export default function ManagingDirectorOfficePage() {
     alert(`✅ ${created.name} registered successfully.`);
   };
 
-  // Edit Request Handler (Triggers 10-min Timer)
+  // Edit Request Handler (Triggers 10-Minute Approval Window)
   const handleRequestProfileEdit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingHospital) return;
@@ -205,8 +206,8 @@ export default function ManagingDirectorOfficePage() {
 
     alert(
       `🚨 URGENT NOTIFICATIONS DISPATCHED!\n\n` +
-      `📩 SMS / Email / WhatsApp sent to Super Admin & Hospital.\n` +
-      `⏱️ 10-Minute timer started. MD can self-approve if Super Admin doesn't respond in time.`
+      `📩 SMS / Email / WhatsApp sent to Super Admin & Medical Partner.\n` +
+      `⏱️ 10-Minute timer started. MD can self-approve if Super Admin does not respond in time.`
     );
   };
 
@@ -229,7 +230,7 @@ export default function ManagingDirectorOfficePage() {
     alert(forceOverride ? '⚡ MD Self-Approved Profile Update!' : '✅ Profile Changes Approved!');
   };
 
-  // Telecom & Missed Calls Logic
+  // Telecom Controls & Missed Calls Operations
   const startIndividualCall = (entity: HospitalEntity | AgentEntity) => {
     setTargetEntity(entity);
     setActiveCallType('INDIVIDUAL');
@@ -263,10 +264,15 @@ export default function ManagingDirectorOfficePage() {
     setTargetEntity(null);
   };
 
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    router.push('/apt-login');
+  };
+
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-slate-950 text-slate-400 flex items-center justify-center p-4 text-center text-xs font-bold">
-        Verifying MD Executive Cryptographic Clearance...
+      <div className="min-h-screen bg-slate-950 text-slate-400 flex items-center justify-center p-4 text-center text-xs font-bold font-mono">
+        Verifying MD Executive Cryptographic Clearance via Supabase Auth...
       </div>
     );
   }
@@ -274,14 +280,14 @@ export default function ManagingDirectorOfficePage() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans flex flex-col pb-10">
       
-      {/* Network Alert Bar for local connectivity */}
+      {/* Offline Status Alert */}
       {!isOnline && (
-        <div className="bg-red-500/20 border border-red-500/40 p-2.5 rounded-xl text-red-300 text-xs text-center font-bold">
+        <div className="bg-red-500/20 border-b border-red-500/40 p-2.5 text-red-300 text-xs text-center font-bold">
           ⚠️ Offline Mode: Internet Connection Lost!
         </div>
       )}
 
-      {/* Responsive Header Bar */}
+      {/* Responsive Executive Header Bar */}
       <header className="border-b border-amber-500/30 bg-slate-900/90 backdrop-blur-md sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2 sm:gap-3">
@@ -307,10 +313,7 @@ export default function ManagingDirectorOfficePage() {
               Admin Console →
             </Link>
             <button
-              onClick={() => {
-                localStorage.removeItem('isLoggedIn');
-                router.push('/apt-login');
-              }}
+              onClick={handleSignOut}
               className="px-2.5 py-1.5 sm:px-3 sm:py-2 bg-red-600/20 text-red-400 hover:bg-red-600 hover:text-white text-[10px] sm:text-xs font-bold rounded-xl border border-red-500/30 transition"
             >
               Sign Out
@@ -319,13 +322,13 @@ export default function ManagingDirectorOfficePage() {
         </div>
       </header>
 
-      {/* Main Grid: Fully Responsive Layout */}
+      {/* Main Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6">
         
         {/* Left Column: Video Telecom & Missed Call Logs */}
         <div className="lg:col-span-7 flex flex-col gap-4 sm:gap-5">
           
-          {/* Executive Telecom Player Screen */}
+          {/* Executive Telecom Video Screen */}
           <div className="bg-slate-900 border border-amber-500/30 rounded-2xl sm:rounded-3xl p-4 sm:p-5 min-h-[320px] sm:min-h-[420px] flex items-center justify-center relative overflow-hidden shadow-2xl">
             
             {activeCallType === 'INDIVIDUAL' && targetEntity && (
@@ -340,10 +343,9 @@ export default function ManagingDirectorOfficePage() {
                   <p className="text-[11px] sm:text-xs text-slate-400">
                     {'city' in targetEntity ? targetEntity.city : (targetEntity as AgentEntity).region}
                   </p>
-                  <p className="text-[9px] sm:text-[10px] text-emerald-400 font-mono mt-0.5">● Active Encrypted Feed</p>
+                  <p className="text-[9px] sm:text-[10px] text-emerald-400 font-mono mt-0.5">● Active Encrypted Session</p>
                 </div>
 
-                {/* Call Action Controls */}
                 <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
                   <button
                     onClick={() => setMicMuted(!micMuted)}
@@ -387,9 +389,9 @@ export default function ManagingDirectorOfficePage() {
                 </div>
                 <div>
                   <h3 className="text-sm sm:text-base font-extrabold text-white">
-                    National Executive Conference Room
+                    National Executive Conference Line
                   </h3>
-                  <p className="text-[11px] sm:text-xs text-amber-300">MD • Regional Reps • Partner Hospitals</p>
+                  <p className="text-[11px] sm:text-xs text-amber-300">MD • Regional Agents • Partner Hospitals</p>
                 </div>
 
                 <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
@@ -425,7 +427,7 @@ export default function ManagingDirectorOfficePage() {
                 <div>
                   <h3 className="text-sm sm:text-base font-extrabold text-white">Executive Telecom Portal</h3>
                   <p className="text-[11px] sm:text-xs text-slate-400 max-w-xs sm:max-w-md mt-1 mx-auto">
-                    Initiate direct video hotlines or launch the National Executive Conference Line.
+                    Initiate encrypted direct hotline calls or launch the National Executive Conference Line.
                   </p>
                 </div>
                 <button
@@ -439,7 +441,7 @@ export default function ManagingDirectorOfficePage() {
 
           </div>
 
-          {/* Missed Calls Center */}
+          {/* Missed Call Center */}
           <div className="bg-slate-900 border border-slate-800 rounded-2xl sm:rounded-3xl p-4 sm:p-5 space-y-3">
             <div className="flex justify-between items-center">
               <h3 className="text-xs font-bold uppercase tracking-wider text-rose-400">
@@ -526,7 +528,7 @@ export default function ManagingDirectorOfficePage() {
                       <p className="truncate">Email: {h.contactEmail}</p>
                     </div>
 
-                    {/* Pending Update & 10-Min Timer Status */}
+                    {/* Pending Update Workflow */}
                     {h.approvalStatus === 'PENDING_SUPER_ADMIN' && h.updateRequestedAt && (
                       <div className="p-2 sm:p-2.5 bg-amber-950/40 border border-amber-500/30 rounded-xl space-y-1 text-[10px]">
                         <p className="text-amber-300 font-bold">⚠️ Requested Changes Pending</p>
@@ -552,7 +554,7 @@ export default function ManagingDirectorOfficePage() {
                       </div>
                     )}
 
-                    {/* Action Buttons */}
+                    {/* Action Controls */}
                     <div className="flex items-center gap-2 pt-1">
                       <button
                         onClick={() => startIndividualCall(h)}
@@ -583,7 +585,7 @@ export default function ManagingDirectorOfficePage() {
             </div>
           </div>
 
-          {/* Representatives Directory */}
+          {/* Field Agents Directory */}
           <div className="bg-slate-900 border border-slate-800 rounded-2xl sm:rounded-3xl p-4 sm:p-5 space-y-3">
             <h3 className="text-xs font-bold uppercase tracking-wider text-sky-400">
               💼 Field Representatives Directory
@@ -610,8 +612,7 @@ export default function ManagingDirectorOfficePage() {
         </div>
 
       </main>
-
-      {/* MODAL 1: REGISTER HOSPITAL */}
+                    {/* MODAL 1: REGISTER HOSPITAL */}
       {showAddHospitalModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
           <div className="bg-slate-900 border border-amber-500/30 rounded-2xl sm:rounded-3xl p-5 sm:p-6 max-w-md w-full space-y-4 shadow-2xl">
@@ -701,7 +702,8 @@ export default function ManagingDirectorOfficePage() {
           </div>
         </div>
       )}
-{/* MODAL 2: EDIT PROFILE */}
+
+      {/* MODAL 2: EDIT PROFILE */}
       {editingHospital && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
           <div className="bg-slate-900 border border-amber-500/30 rounded-2xl sm:rounded-3xl p-5 sm:p-6 max-w-md w-full space-y-4 shadow-2xl">
