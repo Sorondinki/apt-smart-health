@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import toast from 'react-hot-toast';
 import { supabase } from '@/lib/supabaseClient';
 
 interface HospitalEntity {
@@ -11,11 +12,11 @@ interface HospitalEntity {
   city: string;
   category: 'General Hospital' | 'Private Clinic' | 'Independent Doctor' | 'Multi-Branch Network';
   status: 'Online' | 'In Call' | 'Offline';
-  contactPhone: string;
-  contactEmail: string;
-  approvalStatus: 'APPROVED' | 'PENDING_SUPER_ADMIN';
-  pendingChanges?: Partial<HospitalEntity>;
-  updateRequestedAt?: number;
+  contact_phone: string;
+  contact_email: string;
+  approval_status: 'APPROVED' | 'PENDING_SUPER_ADMIN';
+  pending_changes?: Partial<HospitalEntity> | null;
+  update_requested_at?: string | null;
 }
 
 interface AgentEntity {
@@ -28,12 +29,12 @@ interface AgentEntity {
 
 interface MissedCallLog {
   id: string;
-  callerName: string;
-  callType: 'INDIVIDUAL' | 'CONFERENCE';
-  timestamp: string;
+  caller_name: string;
+  call_type: 'INDIVIDUAL' | 'CONFERENCE';
+  created_at?: string;
 }
 
-// Executive Authorized MD Emails List
+// Executive Security Clearances (Authorized MD Emails)
 const ALLOWED_MD_EMAILS = [
   'sorondinkiseeme@gmail.com',
   'mariyashehuibrahim@gmail.com'
@@ -44,6 +45,7 @@ export default function ManagingDirectorOfficePage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [mdEmail, setMdEmail] = useState('');
   const [isOnline, setIsOnline] = useState(true);
+  const [loadingData, setLoadingData] = useState(true);
 
   // State Management
   const [hospitals, setHospitals] = useState<HospitalEntity[]>([]);
@@ -64,28 +66,21 @@ export default function ManagingDirectorOfficePage() {
     name: '',
     city: '',
     category: 'General Hospital' as HospitalEntity['category'],
-    contactPhone: '',
-    contactEmail: ''
+    contact_phone: '',
+    contact_email: ''
   });
 
   const [editHospitalForm, setEditHospitalForm] = useState({
     name: '',
     city: '',
     category: 'General Hospital' as HospitalEntity['category'],
-    contactPhone: '',
-    contactEmail: ''
+    contact_phone: '',
+    contact_email: ''
   });
 
-  // Timer Tick State (10-Minute Approval Logic)
   const [currentTime, setCurrentTime] = useState(Date.now());
 
-  // Default Fallback Directories
-  const defaultHospitals: HospitalEntity[] = [
-    { id: 'HOSP-101', name: 'Aminu Kano Teaching Hospital', city: 'Kano', category: 'General Hospital', status: 'Online', contactPhone: '+2348011112222', contactEmail: 'info@akth.gov.ng', approvalStatus: 'APPROVED' },
-    { id: 'HOSP-102', name: 'Nassarawa Specialist Hospital', city: 'Kano', category: 'Multi-Branch Network', status: 'Online', contactPhone: '+2348022223333', contactEmail: 'nassarawa@kano.gov.ng', approvalStatus: 'APPROVED' },
-    { id: 'HOSP-103', name: 'Dr. Sadiq Private Care Clinic', city: 'Abuja', category: 'Independent Doctor', status: 'Offline', contactPhone: '+2348033334444', contactEmail: 'sadiq.clinic@health.ng', approvalStatus: 'APPROVED' },
-  ];
-
+  // Default Agents List
   const defaultAgents: AgentEntity[] = [
     { id: 'AGT-001', name: 'Engr. Jamilu Sadiq (Sorondinki)', region: 'Headquarters', status: 'Online', type: 'Agent' },
     { id: 'AGT-002', name: 'Ahmad Kano Field Agent', region: 'Kano Zone', status: 'Online', type: 'Agent' },
@@ -106,131 +101,203 @@ export default function ManagingDirectorOfficePage() {
     };
   }, []);
 
-  // Supabase Authentication & Clearance Verification
+  // Supabase Fetch Operations
+  const fetchHospitals = async () => {
+    const { data, error } = await supabase
+      .from('hospitals')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (!error && data) {
+      setHospitals(data as HospitalEntity[]);
+    }
+  };
+
+  const fetchMissedCalls = async () => {
+    const { data, error } = await supabase
+      .from('missed_calls')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (!error && data) {
+      setMissedCalls(data as MissedCallLog[]);
+    }
+  };
+
+  // Authentication & Executive Clearance Check (Dual Supabase & Storage Support)
   useEffect(() => {
     const checkExecutiveClearance = async () => {
-      const { data: { session }, error } = await supabase.auth.getSession();
+      let userEmail = '';
 
-      if (error || !session) {
-        alert('Security Alert: Authentication required to enter MD Executive Office.');
+      // Check Active Supabase Auth Session
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session && session.user.email) {
+        userEmail = session.user.email;
+      } else {
+        // Fallback to local Session
+        const isLoggedIn = localStorage.getItem('isLoggedIn');
+        userEmail = localStorage.getItem('userEmail') || '';
+
+        if (!isLoggedIn || !userEmail) {
+          toast.error('Security Alert: Authentication required to enter MD Executive Office.');
+          router.push('/apt-login');
+          return;
+        }
+      }
+
+      // Check Revoked Account Status
+      const bannedUsers = JSON.parse(localStorage.getItem('apt_banned_users') || '[]');
+      if (bannedUsers.includes(userEmail.toLowerCase())) {
+        toast.error('Access Denied: Account revoked.');
+        localStorage.removeItem('isLoggedIn');
+        await supabase.auth.signOut();
         router.push('/apt-login');
         return;
       }
 
-      const userEmail = session.user.email?.toLowerCase() || '';
+      // Validate Authorized MD Emails
+      const isAuthorized = ALLOWED_MD_EMAILS.some(
+        (email) => email.toLowerCase() === userEmail.toLowerCase()
+      );
 
-      if (!ALLOWED_MD_EMAILS.includes(userEmail)) {
-        alert('Unauthorized Access: Managing Director Clearance Required.');
+      if (!isAuthorized) {
+        toast.error('Unauthorized Access: Managing Director Clearance Required.');
         router.push('/');
         return;
       }
 
-      setMdEmail(session.user.email || '');
+      setMdEmail(userEmail);
       setIsAuthenticated(true);
-
-      // Load persistent hospital records
-      const savedHospitals = localStorage.getItem('apt_md_hospitals');
-      if (savedHospitals) setHospitals(JSON.parse(savedHospitals));
-      else setHospitals(defaultHospitals);
-
-      // Load persistent missed calls logs
-      const savedMissedCalls = localStorage.getItem('apt_md_missed_calls');
-      if (savedMissedCalls) setMissedCalls(JSON.parse(savedMissedCalls));
-
       setAgents(defaultAgents);
+
+      // Fetch Live Database Data
+      await fetchHospitals();
+      await fetchMissedCalls();
+      setLoadingData(false);
     };
 
     checkExecutiveClearance();
   }, [router]);
 
-  // Periodic Timer Tick
+  // Periodic Timer Tick (10-Minute Approval Window)
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(Date.now()), 5000);
     return () => clearInterval(timer);
   }, []);
 
-  const saveHospitalsToStorage = (updatedList: HospitalEntity[]) => {
-    setHospitals(updatedList);
-    localStorage.setItem('apt_md_hospitals', JSON.stringify(updatedList));
-  };
-
-  // Register New Medical Entity Handler
-  const handleRegisterHospital = (e: React.FormEvent) => {
+  // Register New Medical Entity to Supabase Database
+  const handleRegisterHospital = async (e: React.FormEvent) => {
     e.preventDefault();
-    const created: HospitalEntity = {
-      id: `HOSP-${Math.floor(100 + Math.random() * 900)}`,
+
+    const newRecord = {
       name: newHospitalForm.name,
       city: newHospitalForm.city,
       category: newHospitalForm.category,
-      contactPhone: newHospitalForm.contactPhone,
-      contactEmail: newHospitalForm.contactEmail,
+      contact_phone: newHospitalForm.contact_phone,
+      contact_email: newHospitalForm.contact_email,
       status: 'Online',
-      approvalStatus: 'APPROVED'
+      approval_status: 'APPROVED'
     };
 
-    const updated = [created, ...hospitals];
-    saveHospitalsToStorage(updated);
-    setShowAddHospitalModal(false);
-    setNewHospitalForm({ name: '', city: '', category: 'General Hospital', contactPhone: '', contactEmail: '' });
-    alert(`✅ ${created.name} registered successfully.`);
+    const { data, error } = await supabase.from('hospitals').insert([newRecord]).select();
+
+    if (error) {
+      toast.error(`Failed to register entity: ${error.message}`);
+      return;
+    }
+
+    if (data) {
+      setHospitals([data[0] as HospitalEntity, ...hospitals]);
+      setShowAddHospitalModal(false);
+      setNewHospitalForm({ name: '', city: '', category: 'General Hospital', contact_phone: '', contact_email: '' });
+      toast.success(`${newRecord.name} registered directly in Database.`);
+    }
   };
 
-  // Edit Request Handler (Triggers 10-Minute Approval Window)
-  const handleRequestProfileEdit = (e: React.FormEvent) => {
+  // Request Profile Edit (Start 10-Minute Timer in Database)
+  const handleRequestProfileEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingHospital) return;
 
-    const timestamp = Date.now();
-    const pendingData: Partial<HospitalEntity> = {
+    const timestamp = new Date().toISOString();
+    const pendingData = {
       name: editHospitalForm.name,
       city: editHospitalForm.city,
       category: editHospitalForm.category,
-      contactPhone: editHospitalForm.contactPhone,
-      contactEmail: editHospitalForm.contactEmail
+      contact_phone: editHospitalForm.contact_phone,
+      contact_email: editHospitalForm.contact_email
     };
 
-    const updated = hospitals.map(h => {
-      if (h.id === editingHospital.id) {
-        return {
-          ...h,
-          approvalStatus: 'PENDING_SUPER_ADMIN' as const,
-          pendingChanges: pendingData,
-          updateRequestedAt: timestamp
-        };
-      }
-      return h;
-    });
+    const { error } = await supabase
+      .from('hospitals')
+      .update({
+        approval_status: 'PENDING_SUPER_ADMIN',
+        pending_changes: pendingData,
+        update_requested_at: timestamp
+      })
+      .eq('id', editingHospital.id);
 
-    saveHospitalsToStorage(updated);
+    if (error) {
+      toast.error(`Failed to update request: ${error.message}`);
+      return;
+    }
+
+    await fetchHospitals();
     setEditingHospital(null);
 
-    alert(
-      `🚨 URGENT NOTIFICATIONS DISPATCHED!\n\n` +
-      `📩 SMS / Email / WhatsApp sent to Super Admin & Medical Partner.\n` +
-      `⏱️ 10-Minute timer started. MD can self-approve if Super Admin does not respond in time.`
+    toast.success(
+      '🚨 URGENT NOTIFICATIONS DISPATCHED!\n' +
+      '📩 SMS / Email / WhatsApp sent to Super Admin & Partner.\n' +
+      '⏱️ 10-Minute timer recorded in Database.',
+      { duration: 6000 }
     );
   };
 
-  // Approval Handler
-  const handleApproveChanges = (hospitalId: string, forceOverride: boolean = false) => {
-    const updated = hospitals.map(h => {
-      if (h.id === hospitalId && h.pendingChanges) {
-        return {
-          ...h,
-          ...h.pendingChanges,
-          approvalStatus: 'APPROVED' as const,
-          pendingChanges: undefined,
-          updateRequestedAt: undefined
-        };
-      }
-      return h;
-    });
+  // Approve Changes in Supabase
+  const handleApproveChanges = async (hospital: HospitalEntity) => {
+    if (!hospital.pending_changes) return;
 
-    saveHospitalsToStorage(updated);
-    alert(forceOverride ? '⚡ MD Self-Approved Profile Update!' : '✅ Profile Changes Approved!');
+    const updatedPayload = {
+      ...hospital.pending_changes,
+      approval_status: 'APPROVED',
+      pending_changes: null,
+      update_requested_at: null
+    };
+
+    const { error } = await supabase
+      .from('hospitals')
+      .update(updatedPayload)
+      .eq('id', hospital.id);
+
+    if (error) {
+      toast.error(`Approval error: ${error.message}`);
+      return;
+    }
+
+    await fetchHospitals();
+    toast.success('⚡ Profile Changes Approved & Updated in Database!');
   };
 
-  // Telecom Controls & Missed Calls Operations
+  // Log Missed Call to Supabase Database
+  const simulateUnansweredCall = async () => {
+    const targetName = targetEntity ? targetEntity.name : 'Executive Conference Line';
+    const missedLog = {
+      caller_name: targetName,
+      call_type: activeCallType === 'CONFERENCE' ? 'CONFERENCE' : 'INDIVIDUAL'
+    };
+
+    const { data, error } = await supabase.from('missed_calls').insert([missedLog]).select();
+
+    if (!error && data) {
+      setMissedCalls([data[0] as MissedCallLog, ...missedCalls]);
+    }
+
+    setActiveCallType('NONE');
+    setTargetEntity(null);
+    toast.error(`📲 Unanswered Call Recorded for ${targetName}`);
+  };
+
   const startIndividualCall = (entity: HospitalEntity | AgentEntity) => {
     setTargetEntity(entity);
     setActiveCallType('INDIVIDUAL');
@@ -241,24 +308,6 @@ export default function ManagingDirectorOfficePage() {
     setActiveCallType('CONFERENCE');
   };
 
-  const simulateUnansweredCall = () => {
-    const targetName = targetEntity ? targetEntity.name : 'Executive Conference Line';
-    const missedLog: MissedCallLog = {
-      id: `MC-${Date.now()}`,
-      callerName: targetName,
-      callType: activeCallType === 'CONFERENCE' ? 'CONFERENCE' : 'INDIVIDUAL',
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    };
-
-    const updatedMissed = [missedLog, ...missedCalls];
-    setMissedCalls(updatedMissed);
-    localStorage.setItem('apt_md_missed_calls', JSON.stringify(updatedMissed));
-
-    setActiveCallType('NONE');
-    setTargetEntity(null);
-    alert(`📲 Unanswered Call Notification Recorded for ${targetName}.`);
-  };
-
   const endCall = () => {
     setActiveCallType('NONE');
     setTargetEntity(null);
@@ -266,13 +315,15 @@ export default function ManagingDirectorOfficePage() {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
+    localStorage.removeItem('isLoggedIn');
+    toast.success('Logged out successfully');
     router.push('/apt-login');
   };
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated || loadingData) {
     return (
       <div className="min-h-screen bg-slate-950 text-slate-400 flex items-center justify-center p-4 text-center text-xs font-bold font-mono">
-        Verifying MD Executive Cryptographic Clearance via Supabase Auth...
+        Connecting to Supabase Database & Verifying MD Executive Clearance...
       </div>
     );
   }
@@ -280,14 +331,14 @@ export default function ManagingDirectorOfficePage() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans flex flex-col pb-10">
       
-      {/* Offline Status Alert */}
+      {/* Network Alert */}
       {!isOnline && (
         <div className="bg-red-500/20 border-b border-red-500/40 p-2.5 text-red-300 text-xs text-center font-bold">
           ⚠️ Offline Mode: Internet Connection Lost!
         </div>
       )}
 
-      {/* Responsive Executive Header Bar */}
+      {/* Header Bar */}
       <header className="border-b border-amber-500/30 bg-slate-900/90 backdrop-blur-md sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2 sm:gap-3">
@@ -298,7 +349,7 @@ export default function ManagingDirectorOfficePage() {
               <h1 className="font-extrabold text-xs sm:text-base text-amber-400 tracking-tight flex items-center gap-1.5">
                 MD Executive Portal
                 <span className="hidden sm:inline-block px-2 py-0.5 rounded-full text-[9px] bg-amber-500/20 text-amber-300 border border-amber-500/30 font-bold">
-                  ★ MD COMMAND
+                  ★ DATABASE LIVE
                 </span>
               </h1>
               <p className="text-[9px] sm:text-[10px] text-slate-400 truncate max-w-[150px] sm:max-w-none">{mdEmail}</p>
@@ -322,13 +373,12 @@ export default function ManagingDirectorOfficePage() {
         </div>
       </header>
 
-      {/* Main Container */}
+      {/* Main Grid Layout */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6">
         
-        {/* Left Column: Video Telecom & Missed Call Logs */}
+        {/* Left Column: Telecom Video & Missed Call Logs */}
         <div className="lg:col-span-7 flex flex-col gap-4 sm:gap-5">
           
-          {/* Executive Telecom Video Screen */}
           <div className="bg-slate-900 border border-amber-500/30 rounded-2xl sm:rounded-3xl p-4 sm:p-5 min-h-[320px] sm:min-h-[420px] flex items-center justify-center relative overflow-hidden shadow-2xl">
             
             {activeCallType === 'INDIVIDUAL' && targetEntity && (
@@ -343,38 +393,35 @@ export default function ManagingDirectorOfficePage() {
                   <p className="text-[11px] sm:text-xs text-slate-400">
                     {'city' in targetEntity ? targetEntity.city : (targetEntity as AgentEntity).region}
                   </p>
-                  <p className="text-[9px] sm:text-[10px] text-emerald-400 font-mono mt-0.5">● Active Encrypted Session</p>
+                  <p className="text-[9px] sm:text-[10px] text-emerald-400 font-mono mt-0.5">● Active Encrypted Call</p>
                 </div>
 
                 <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
                   <button
                     onClick={() => setMicMuted(!micMuted)}
-                    className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-[11px] sm:text-xs font-bold ${
+                    className={`px-3 py-1.5 rounded-xl text-[11px] sm:text-xs font-bold ${
                       micMuted ? 'bg-red-600 text-white' : 'bg-slate-800 text-slate-200'
                     }`}
                   >
                     {micMuted ? '🎙️ Unmute' : '🎙️ Mute'}
                   </button>
-
                   <button
                     onClick={() => setCamOff(!camOff)}
-                    className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-[11px] sm:text-xs font-bold ${
+                    className={`px-3 py-1.5 rounded-xl text-[11px] sm:text-xs font-bold ${
                       camOff ? 'bg-red-600 text-white' : 'bg-slate-800 text-slate-200'
                     }`}
                   >
                     {camOff ? '📹 Cam On' : '📹 Cam Off'}
                   </button>
-
                   <button
                     onClick={simulateUnansweredCall}
-                    className="px-3 py-1.5 sm:px-4 sm:py-2 bg-amber-600/30 hover:bg-amber-600 text-amber-200 text-[11px] sm:text-xs font-bold rounded-xl border border-amber-500/40"
+                    className="px-3 py-1.5 bg-amber-600/30 hover:bg-amber-600 text-amber-200 text-[11px] sm:text-xs font-bold rounded-xl border border-amber-500/40"
                   >
                     📲 Mark Unanswered
                   </button>
-
                   <button
                     onClick={endCall}
-                    className="px-4 py-1.5 sm:px-5 sm:py-2 bg-red-600 hover:bg-red-700 text-white font-extrabold text-[11px] sm:text-xs rounded-xl shadow-lg"
+                    className="px-4 py-1.5 bg-red-600 hover:bg-red-700 text-white font-extrabold text-[11px] sm:text-xs rounded-xl shadow-lg"
                   >
                     End Call
                   </button>
@@ -441,37 +488,28 @@ export default function ManagingDirectorOfficePage() {
 
           </div>
 
-          {/* Missed Call Center */}
+          {/* Missed Calls Center */}
           <div className="bg-slate-900 border border-slate-800 rounded-2xl sm:rounded-3xl p-4 sm:p-5 space-y-3">
             <div className="flex justify-between items-center">
               <h3 className="text-xs font-bold uppercase tracking-wider text-rose-400">
                 📞 Missed Call Logs ({missedCalls.length})
               </h3>
-              {missedCalls.length > 0 && (
-                <button
-                  onClick={() => {
-                    setMissedCalls([]);
-                    localStorage.removeItem('apt_md_missed_calls');
-                  }}
-                  className="text-[10px] text-slate-400 hover:text-white"
-                >
-                  Clear Logs
-                </button>
-              )}
             </div>
 
             <div className="space-y-2 max-h-36 overflow-y-auto pr-1">
               {missedCalls.length === 0 ? (
-                <p className="text-[11px] text-slate-500 italic">No missed call records found.</p>
+                <p className="text-[11px] text-slate-500 italic">No missed call records found in database.</p>
               ) : (
                 missedCalls.map((log) => (
                   <div key={log.id} className="p-2.5 sm:p-3 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-between">
                     <div>
-                      <p className="text-xs font-bold text-white">{log.callerName}</p>
-                      <p className="text-[10px] text-slate-400">Unanswered • {log.timestamp}</p>
+                      <p className="text-xs font-bold text-white">{log.caller_name}</p>
+                      <p className="text-[10px] text-slate-400">
+                        Unanswered • {log.created_at ? new Date(log.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now'}
+                      </p>
                     </div>
                     <button
-                      onClick={() => alert(`📞 Redialing ${log.callerName}...`)}
+                      onClick={() => toast.success(`📞 Redialing ${log.caller_name}...`)}
                       className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[10px] rounded-lg"
                     >
                       Call Back
@@ -484,14 +522,14 @@ export default function ManagingDirectorOfficePage() {
 
         </div>
 
-        {/* Right Column: Medical Entities Directory & Approval Workflow */}
+        {/* Right Column: Medical Entities Directory */}
         <div className="lg:col-span-5 space-y-4 sm:space-y-5">
           
           <div className="bg-slate-900 border border-slate-800 rounded-2xl sm:rounded-3xl p-4 sm:p-5 space-y-3 sm:space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
                 <h3 className="text-xs font-bold uppercase tracking-wider text-amber-400">
-                  🏥 Medical Entities ({hospitals.length})
+                  🏥 Database Entities ({hospitals.length})
                 </h3>
                 <p className="text-[10px] text-slate-400">General, Private, Clinics & Doctors</p>
               </div>
@@ -503,10 +541,11 @@ export default function ManagingDirectorOfficePage() {
               </button>
             </div>
 
-            {/* List of Hospitals with 10-Minute Timer Logic */}
+            {/* Hospitals Database Records List */}
             <div className="space-y-3 max-h-[380px] sm:max-h-[440px] overflow-y-auto pr-1">
               {hospitals.map((h) => {
-                const elapsedTimeInSeconds = h.updateRequestedAt ? Math.floor((currentTime - h.updateRequestedAt) / 1000) : 0;
+                const requestedTime = h.update_requested_at ? new Date(h.update_requested_at).getTime() : 0;
+                const elapsedTimeInSeconds = requestedTime ? Math.floor((currentTime - requestedTime) / 1000) : 0;
                 const isTimerExpired = elapsedTimeInSeconds >= 600;
 
                 return (
@@ -517,44 +556,37 @@ export default function ManagingDirectorOfficePage() {
                         <p className="text-[10px] text-amber-300 font-medium">{h.category} • {h.city}</p>
                       </div>
                       <span className={`shrink-0 px-2 py-0.5 rounded text-[8px] sm:text-[9px] font-bold ${
-                        h.approvalStatus === 'APPROVED' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400 animate-pulse'
+                        h.approval_status === 'APPROVED' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400 animate-pulse'
                       }`}>
-                        {h.approvalStatus === 'APPROVED' ? '✓ Approved' : '⏳ Pending Admin'}
+                        {h.approval_status === 'APPROVED' ? '✓ Approved' : '⏳ Pending Admin'}
                       </span>
                     </div>
 
                     <div className="text-[10px] text-slate-400 font-mono space-y-0.5">
-                      <p className="truncate">Phone: {h.contactPhone}</p>
-                      <p className="truncate">Email: {h.contactEmail}</p>
+                      <p className="truncate">Phone: {h.contact_phone}</p>
+                      <p className="truncate">Email: {h.contact_email}</p>
                     </div>
 
                     {/* Pending Update Workflow */}
-                    {h.approvalStatus === 'PENDING_SUPER_ADMIN' && h.updateRequestedAt && (
+                    {h.approval_status === 'PENDING_SUPER_ADMIN' && h.update_requested_at && (
                       <div className="p-2 sm:p-2.5 bg-amber-950/40 border border-amber-500/30 rounded-xl space-y-1 text-[10px]">
                         <p className="text-amber-300 font-bold">⚠️ Requested Changes Pending</p>
                         <p className="text-slate-300">
                           Timer: <span className="font-mono text-white font-bold">{elapsedTimeInSeconds}s / 600s</span>
                         </p>
                         
-                        {isTimerExpired ? (
-                          <button
-                            onClick={() => handleApproveChanges(h.id, true)}
-                            className="w-full py-1 mt-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg"
-                          >
-                            ⚡ 10-Mins Elapsed: Self-Approve Changes
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => handleApproveChanges(h.id, true)}
-                            className="w-full py-1 mt-1 bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold rounded-lg"
-                          >
-                            Force MD Approval Now
-                          </button>
-                        )}
+                        <button
+                          onClick={() => handleApproveChanges(h)}
+                          className={`w-full py-1 mt-1 font-bold rounded-lg ${
+                            isTimerExpired ? 'bg-emerald-600 hover:bg-emerald-500 text-white' : 'bg-amber-600 hover:bg-amber-500 text-slate-950'
+                          }`}
+                        >
+                          {isTimerExpired ? '⚡ 10-Mins Elapsed: Self-Approve' : 'Force MD Approval Now'}
+                        </button>
                       </div>
                     )}
 
-                    {/* Action Controls */}
+                    {/* Action Buttons */}
                     <div className="flex items-center gap-2 pt-1">
                       <button
                         onClick={() => startIndividualCall(h)}
@@ -570,8 +602,8 @@ export default function ManagingDirectorOfficePage() {
                             name: h.name,
                             city: h.city,
                             category: h.category,
-                            contactPhone: h.contactPhone,
-                            contactEmail: h.contactEmail
+                            contact_phone: h.contact_phone,
+                            contact_email: h.contact_email
                           });
                         }}
                         className="py-1.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-[10px] rounded-xl"
@@ -585,7 +617,7 @@ export default function ManagingDirectorOfficePage() {
             </div>
           </div>
 
-          {/* Field Agents Directory */}
+          {/* Field Agents */}
           <div className="bg-slate-900 border border-slate-800 rounded-2xl sm:rounded-3xl p-4 sm:p-5 space-y-3">
             <h3 className="text-xs font-bold uppercase tracking-wider text-sky-400">
               💼 Field Representatives Directory
@@ -612,11 +644,12 @@ export default function ManagingDirectorOfficePage() {
         </div>
 
       </main>
-                    {/* MODAL 1: REGISTER HOSPITAL */}
+
+      {/* MODAL 1: REGISTER HOSPITAL */}
       {showAddHospitalModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
           <div className="bg-slate-900 border border-amber-500/30 rounded-2xl sm:rounded-3xl p-5 sm:p-6 max-w-md w-full space-y-4 shadow-2xl">
-            <h3 className="font-bold text-sm sm:text-base text-white">Register New Medical Entity</h3>
+            <h3 className="font-bold text-sm sm:text-base text-white">Register Entity to Database</h3>
 
             <form onSubmit={handleRegisterHospital} className="space-y-3">
               <div>
@@ -665,8 +698,8 @@ export default function ManagingDirectorOfficePage() {
                   type="text"
                   required
                   placeholder="+23480..."
-                  value={newHospitalForm.contactPhone}
-                  onChange={(e) => setNewHospitalForm({ ...newHospitalForm, contactPhone: e.target.value })}
+                  value={newHospitalForm.contact_phone}
+                  onChange={(e) => setNewHospitalForm({ ...newHospitalForm, contact_phone: e.target.value })}
                   className="w-full mt-1 p-2.5 sm:p-3 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white outline-none focus:border-amber-500"
                 />
               </div>
@@ -677,8 +710,8 @@ export default function ManagingDirectorOfficePage() {
                   type="email"
                   required
                   placeholder="info@hospital.com"
-                  value={newHospitalForm.contactEmail}
-                  onChange={(e) => setNewHospitalForm({ ...newHospitalForm, contactEmail: e.target.value })}
+                  value={newHospitalForm.contact_email}
+                  onChange={(e) => setNewHospitalForm({ ...newHospitalForm, contact_email: e.target.value })}
                   className="w-full mt-1 p-2.5 sm:p-3 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white outline-none focus:border-amber-500"
                 />
               </div>
@@ -695,14 +728,13 @@ export default function ManagingDirectorOfficePage() {
                   type="submit"
                   className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl shadow-lg"
                 >
-                  Register
+                  Save to Database
                 </button>
               </div>
             </form>
           </div>
         </div>
       )}
-
       {/* MODAL 2: EDIT PROFILE */}
       {editingHospital && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
@@ -762,7 +794,7 @@ export default function ManagingDirectorOfficePage() {
                   type="submit"
                   className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl shadow-lg"
                 >
-                  Submit & Start Timer
+                  Save & Start Database Timer
                 </button>
               </div>
             </form>
