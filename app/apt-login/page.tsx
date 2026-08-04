@@ -23,42 +23,37 @@ export default function StaffAndAgentLoginPage() {
 
     const cleanEmail = email.trim().toLowerCase();
 
-    try {
-      // 1. Shiga ta Supabase Authentication
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: cleanEmail,
-        password: password,
-      });
+    // 1. Shiga ta Supabase Authentication
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: cleanEmail,
+      password: password,
+    });
 
-      if (error) {
-        setErrorMessage(error.message || 'An samu kuskure wajen tabbatar da asusu.');
-        setLoading(false);
-        return;
-      }
-
-      // 2. Duba matsayin mai amfani (Role & Clearance) daga Supabase User Metadata
-      const userRole = data.user?.user_metadata?.role || 'STAFF';
-
-      // 3. Tura mutum shafin da ya dace
-      if (ALLOWED_MD_EMAILS.includes(cleanEmail)) {
-        router.push('/md-office');
-      } else if (userRole === 'AGENT') {
-        router.push('/agent');
-      } else {
-        router.push('/dashboard');
-      }
-    } catch (err: any) {
-      setErrorMessage(err.message || 'Wani kuskure ya faru daga uwar garke.');
-    } finally {
+    if (error) {
+      setErrorMessage(error.message || 'An samu kuskure wajen tabbatar da asusu.');
       setLoading(false);
+      return;
     }
+
+    // 2. Duba matsayin mai amfani (Role & Clearance) daga Supabase User Metadata
+    const userRole = data.user?.user_metadata?.role || 'STAFF';
+
+    // 3. Tura mutum shafin da ya dace
+    if (ALLOWED_MD_EMAILS.includes(cleanEmail)) {
+      router.push('/md-office');
+    } else if (userRole === 'AGENT') {
+      router.push('/agent');
+    } else {
+      router.push('/dashboard');
+    }
+
+    setLoading(false);
   };
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-4 font-sans">
       <div className="max-w-md w-full bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
         
-        {/* HEADER SECTION */}
         <div className="text-center space-y-2">
           <div className="w-14 h-14 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex items-center justify-center text-amber-400 font-black text-2xl mx-auto shadow-lg shadow-amber-500/10">
             🏢
@@ -71,14 +66,12 @@ export default function StaffAndAgentLoginPage() {
           </p>
         </div>
 
-        {/* ERROR MESSAGE DISPLAY */}
         {errorMessage && (
           <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-xs rounded-xl font-bold text-center">
             {errorMessage}
           </div>
         )}
 
-        {/* FORM SECTION */}
         <form onSubmit={handleStaffLogin} className="space-y-4">
           <div>
             <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">
