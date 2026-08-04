@@ -40,6 +40,8 @@ export default function ManagingDirectorOfficePage() {
 
   // Executive Security Clearances
   const MD_SUPER_EMAIL = 'sorondinkiseeme@gmail.com';
+  const MD_SUPER_EMAIL = 'mariyashehuibrahim@gmail.com';
+  
 
   // State Management
   const [hospitals, setHospitals] = useState<HospitalEntity[]>([]);
@@ -123,7 +125,7 @@ export default function ManagingDirectorOfficePage() {
 
     if (userEmail.toLowerCase() !== MD_SUPER_EMAIL.toLowerCase()) {
       alert('Unauthorized Access: Managing Director Clearance Required.');
-      router.push('/dashboard');
+      router.push('/app');
       return;
     }
 
